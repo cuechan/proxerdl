@@ -174,6 +174,8 @@ while(!$var) {
         next;
     }
     
+    # todo bugfix: value of $proxer_json->{'end'} not updated when when pushing entries to $proxer_json->{'data'}
+    
     # push new entries from 'data' to the old 'data'
     foreach(@{$proxer_api->{'data'}}) {
         push(@{$proxer_json->{'data'}}, $_);
@@ -192,8 +194,8 @@ while(!$var) {
 # We have to trick around a bit.
 # first array entry (ARRAY[0]) stores global info about the anime.
 
-##### BUG #####
-##### TODO #####
+
+
 
 $proxer_watch_start = $proxer_json->{'start'};
 $proxer_watch_stop = $proxer_json->{'end'};
