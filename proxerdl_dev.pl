@@ -94,7 +94,7 @@ GetOptions(
     'proxer' => \&proxer,
     'lang=s' => \$opt_lang,
     'hoster=s' => \$opt_hoster,
-    'list' => \$opt_out,
+    'list' => \$opt_list,
     'no-dir' => \$opt_nodir,
     );
 
@@ -212,13 +212,28 @@ $proxer_watch[0] = {
 };
 
 # prepare your... array
-foreach($proxer_watch_start .. $proxer_watch_stop) {
-    push(@proxer_watch, {
-        'no' => $_, 
-        'lang' => [],
-        'hoster' => [],
-    });
+if($proxer_json->{'kat'} eq 'anime') {
+	foreach($proxer_watch_start .. $proxer_watch_stop) {
+		push(@proxer_watch, {
+			'no' => $_, 
+			'lang' => [],
+			'hoster' => [],
+		});
+	}
 }
+elsif($proxer_json->{'kat'} eq 'manga') {
+	foreach($proxer_watch_start .. $proxer_watch_stop) {
+		push(@proxer_watch, {
+			'no' => $_, 
+			'lang' => [],
+			'hoster' => [],
+		});
+	}
+} else {
+	ERROR("Something is wrong with proxers JSON. Isnt an anime neither a manga.");
+}
+
+# merge the different language entris together
 
 foreach(@{$proxer_json->{'data'}}) {
     push(@{$proxer_watch[$_->{'no'}]->{'hoster'}}, split(',', $_->{'types'}));
@@ -255,71 +270,11 @@ print FH ("\n");
 print FH ("Describtion: \n$meta{'desc'}\n");
 close(FH);
 
-foreach(@proxer_watch) {
-    my $dl_lang;
-    my $dl_host;
-    my $dl_no;
-    my $dl_wishlang;
-    my $dl_wishhost;
-    my @dl_avhoster;
-    my $active;
-    my $dl_link;
-    
-    $active = $_;
-    
-    if ($_->{'no'} eq '0') { # recognize the first entry
-        next;
-    }
-    
-    $dl_no = $_->{'no'};
-    
-        # select language
-    foreach(@wishlang) {
-        $dl_wishlang = $_;
-        foreach(@{$active->{'lang'}}) {
-            if($dl_wishlang eq $_) {
-                $dl_lang = $_;
-                last;
-            }
-        }
-        last if $dl_lang;
-    }
-    VERBOSE("Selected $dl_lang for $dl_no");
-    
-    @dl_avhoster = get_hoster("http://proxer.me/watch/$proxer_id/$dl_no/$dl_lang");
-    foreach(@wishhost) {
-        $dl_wishhost = $_;
-        foreach(@dl_avhoster) {
-            if($dl_wishhost eq $_->{'type'}) {
-                $dl_host = $_;
-                last;
-            }
-        }
-        last if $dl_host;
-    }
-    
-    if(!$dl_lang or !$dl_host) {
-        INFO("No suitable host or language found for $dl_no. Skip");
-        sleep(3);
-        next;
-    }
-    
-    ##### DOWNLOAD #####
-    
-    
-    
-    $dl_link = gen_link($dl_host);
-    
-    INFO($meta{'title'}, ":$dl_no\@$dl_host->{'name'}\n");
-    
-    INFO("Downloading $dl_no");
-    
-    system("youtube-dl -q -o '$file_path/$dl_no.mp4' $dl_link");
-    
-    VERBOSE("Selected $dl_host for $dl_no");
-    INFO("waiting...");
-    sleep(3);
-}
+
+
+dl_anime(@proxer_watch);
+
+
 
 
 
@@ -428,11 +383,76 @@ sub get_info {
     );
     
     return %info;
-    
-    
-    
-    
-    
+}
+
+
+sub dl_anime {
+	
+		foreach(@proxer_watch) {
+		my $dl_lang;
+		my $dl_host;
+		my $dl_no;
+		my $dl_wishlang;
+		my $dl_wishhost;
+		my @dl_avhoster;
+		my $active;
+		my $dl_link;
+		
+		$active = $_;
+		
+		if ($_->{'no'} eq '0') { # recognize the first entry
+			next;
+		}
+		
+		$dl_no = $_->{'no'};
+		
+			# select language
+		foreach(@wishlang) {
+			$dl_wishlang = $_;
+			foreach(@{$active->{'lang'}}) {
+				if($dl_wishlang eq $_) {
+					$dl_lang = $_;
+					last;
+				}
+			}
+			last if $dl_lang;
+		}
+		VERBOSE("Selected $dl_lang for $dl_no");
+		
+		@dl_avhoster = get_hoster("http://proxer.me/watch/$proxer_id/$dl_no/$dl_lang");
+		foreach(@wishhost) {
+			$dl_wishhost = $_;
+			foreach(@dl_avhoster) {
+				if($dl_wishhost eq $_->{'type'}) {
+					$dl_host = $_;
+					last;
+				}
+			}
+			last if $dl_host;
+		}
+		
+		if(!$dl_lang or !$dl_host) {
+			INFO("No suitable host or language found for $dl_no. Skip");
+			sleep(3);
+			next;
+		}
+		
+		##### DOWNLOAD #####
+		
+		
+		
+		$dl_link = gen_link($dl_host);
+		
+		INFO($meta{'title'}, ":$dl_no\@$dl_host->{'name'}\n");
+		
+		INFO("Downloading $dl_no");
+		
+		system("youtube-dl -q -o '$file_path/$dl_no.mp4' $dl_link");
+		
+		VERBOSE("Selected $dl_host for $dl_no");
+		INFO("waiting...");
+		sleep(3);
+	}
 }
 
 sub anime_list {

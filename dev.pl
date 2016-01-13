@@ -5,8 +5,21 @@ use warnings;
 use LWP;
 
 
-foreach(0 .. 20) {
-	print "$_\n";
-	last if $_ == 12;
-	print "OK\n";
+# can i add something something to an array in the middle of nowhere?
+
+my @array;
+
+$array[8] = "8";
+$array[20] = "20";
+
+foreach(@array) {
+	if($_) {
+		print("$_\n");
+	}else {
+		print("undefined\n");
+	}
 }
+
+
+# yes i can! 
+#perlisawesome
