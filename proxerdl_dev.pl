@@ -15,8 +15,9 @@ use Time::HiRes qw( usleep clock );
 ########################
 
 # todo: more verbose output.
-# todo: change output format ('SxxExx.mp4', 'xxx.mp4' '<name>-xxx.mp4').
+# todo: change output format ('SxxExx.mp4', 'xxx.mp4', '<name>-xxx.mp4').
 # todo: add more export possibilities. 
+# todo: add manga support 
 
 
 ##########################
@@ -25,7 +26,15 @@ use Time::HiRes qw( usleep clock );
 
 $|++; # turn that f*cking buffer off!
 
-# todo youtube-dl installed?
+# todo is there an other solution that will work on windows
+BEGIN {
+	my $check = qx(which youtube-dl);
+	
+	if(!$check) {
+		print("youtube-dl is not installed. Visit https://rg3.github.io/youtube-dl/.\n");
+		exit;
+	}
+}
 
 #############################
 #####     VARIABLES     #####
@@ -162,22 +171,24 @@ while(!$var) {
         return $json_var;
     } or ERROR("proxer returned invalid Json");
     
+    if(!$proxer_json) {
+        $proxer_json = $proxer_api;
+        next;
+    }
+    
     # check if this page contains episodes or if its the last++
     if (scalar(@{$proxer_api->{'data'}}) == 0) {
         $var = 1;
         last;
     }
     
-    if(!$proxer_json) {
-        $proxer_json = $proxer_api;
-        next;
-    }
-    
-    # push new entries from 'data' to the old 'data'
+    # push new entries from the api to the old episode array
     foreach(@{$proxer_api->{'data'}}) {
         push(@{$proxer_json->{'data'}}, $_);
         $proxer_json->{'end'} = $_->{'no'};
     }
+    
+    
 }
 
 
