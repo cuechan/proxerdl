@@ -297,7 +297,34 @@ else {
     ERROR("Something went wrong");
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 exit;
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -484,6 +511,7 @@ sub dl_manga {
         my $dl_link;
         my @dl_pages;
         my $dl_server;
+        my @page_buffer;
         
         $active = $_;
         
@@ -519,13 +547,18 @@ sub dl_manga {
         ##### DOWNLOAD #####
         
        
-        
+        # Download all pages
         foreach(@dl_pages) {
-            open(PAGE, '>', "$file_path/$_->[0]");
-            print PAGE (dl($dl_server.$_->[0]));
-            close(PAGE);
+            INFO("Download page: $_->[0]\r");
+            push(@page_buffer, [$_->[0], dl($dl_server.$_->[0])]);
         }
-        die;
+        
+        foreach(@page_buffer) {
+            INFO("Write to disk: $_[0]\r");
+            open(FILE, '>', "$file_path/CH$dl_no$_->[0]");
+            print FILE ($_->[1]);
+            close(FILE);
+        }
         
         INFO($meta{'title'}, ":$dl_no");
         
@@ -648,7 +681,11 @@ sub INFO {
     print color('bold green');
     print("[INFO] ");
     print color('reset');
-    print(@_, "\n");
+    if($_[scalar(@_)-1] !~ m/[\r|\b]$/) {
+        print(@_, "\n");
+    }else {
+        print(@_);
+    }
 }
 
 sub VERBOSE {
