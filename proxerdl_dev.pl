@@ -28,12 +28,12 @@ $|++; # turn that f*cking buffer off!
 
 # todo is there an other solution that will work on windows
 BEGIN {
-	my $check = qx(which youtube-dl);
-	
-	if(!$check) {
-		print("youtube-dl is not installed. Visit https://rg3.github.io/youtube-dl/.\n");
-		exit;
-	}
+    my $check = qx(which youtube-dl);
+    
+    if(!$check) {
+        print("youtube-dl is not installed. Visit https://rg3.github.io/youtube-dl/.\n");
+        exit;
+    }
 }
 
 #############################
@@ -44,8 +44,8 @@ BEGIN {
 
 my $LWP_useragent = "Proxerdl/dev_v0.01";
 my @wishhost = ("proxer-stream", "clipfish-extern", "streamcloud");
-my @wishlang = ("gerdub", "gersub", "engsub", "engdub");
-
+my @wishlang_anime = ("gerdub", "gersub", "engsub", "engdub");
+my @wishlang_manga = ("de", "en");
 
 my $opt_verbose;
 my $opt_link;
@@ -130,7 +130,8 @@ if($ARGV[0]) {
 }
 
 if($opt_lang) {
-    @wishlang = split(',', $opt_lang);
+    @wishlang_anime = split(',', $opt_lang);
+    @wishlang_manga = split(',', $opt_lang);
 }
 
 if($opt_hoster) {
@@ -138,12 +139,15 @@ if($opt_hoster) {
 }
 
 
+
+
+
 #############################
 #####     MAIN PROG     #####
 #############################
 
 
-#####     Get all info we need
+# Get all info we need
 
 %meta = get_info($proxer_id);
 
@@ -205,49 +209,60 @@ $proxer_watch_start = $proxer_json->{'start'};
 $proxer_watch_stop = $proxer_json->{'end'};
 
 $proxer_watch[0] = {
+    'kat' => $proxer_json->{'kat'},
     'no' => '0', 
     'lang' => $proxer_json->{'lang'},
     'title' => $meta{'title'},
     'genre' => [$meta{'genre'}],
 };
 
+
+
 # prepare your... array
-if($proxer_json->{'kat'} eq 'anime') {
-	foreach($proxer_watch_start .. $proxer_watch_stop) {
-		push(@proxer_watch, {
-			'no' => $_, 
-			'lang' => [],
-			'hoster' => [],
-		});
-	}
-}
-elsif($proxer_json->{'kat'} eq 'manga') {
-	foreach($proxer_watch_start .. $proxer_watch_stop) {
-		push(@proxer_watch, {
-			'no' => $_, 
-			'lang' => [],
-			'hoster' => [],
-		});
-	}
-} else {
-	ERROR("Something is wrong with proxers JSON. Isnt an anime neither a manga.");
-}
 
 # merge the different language entris together
-
-foreach(@{$proxer_json->{'data'}}) {
-    push(@{$proxer_watch[$_->{'no'}]->{'hoster'}}, split(',', $_->{'types'}));
-    push(@{$proxer_watch[$_->{'no'}]->{'lang'}}, $_->{'typ'});
-    $proxer_watch[$_->{'no'}]->{'no'} = $_->{'no'};
+if($proxer_json->{'kat'} eq 'anime') {
+    #foreach($proxer_watch_start .. $proxer_watch_stop) {
+        #push(@proxer_watch, {
+            #'no' => $_, 
+            #'lang' => [],
+            #'hoster' => [],
+        #});
+    #}
+    
+    foreach(@{$proxer_json->{'data'}}) {
+        push(@{$proxer_watch[$_->{'no'}]->{'hoster'}}, split(',', $_->{'types'}));
+        push(@{$proxer_watch[$_->{'no'}]->{'lang'}}, $_->{'typ'});
+        $proxer_watch[$_->{'no'}]->{'no'} = $_->{'no'};
+    }
+}
+elsif($proxer_json->{'kat'} eq 'manga') {
+    #foreach($proxer_watch_start .. $proxer_watch_stop) {
+        #push(@proxer_watch, {
+            #'no' => $_, 
+            #'lang' => [],
+            #'title' => [],
+        #});
+    #}
+    
+    foreach(@{$proxer_json->{'data'}}) {
+        $proxer_watch[$_->{'no'}]{'title'} = $_->{'title'};
+        push(@{$proxer_watch[$_->{'no'}]->{'lang'}}, $_->{'typ'});
+        $proxer_watch[$_->{'no'}]->{'no'} = $_->{'no'};
+    }
+} else {
+    ERROR("Something is wrong with proxers JSON. Isnt an anime neither a manga.");
 }
 
+# removing undefined entries in @proxer_watch
+@proxer_watch = grep(defined($_), @proxer_watch);
 
 
 ##### OUTPUTS ##### 
 
 
 if($opt_list) {
-    anime_list(@proxer_watch);
+    meta_list(@proxer_watch);
     exit;
 }
 
@@ -272,12 +287,17 @@ close(FH);
 
 
 
-dl_anime(@proxer_watch);
+if($proxer_watch[0]->{'kat'} eq 'anime') {
+    dl_anime(@proxer_watch);
+}
+elsif($proxer_watch[0]->{'kat'} eq 'manga') {
+    dl_manga(@proxer_watch);
+}
+else {
+    ERROR("Something went wrong");
+}
 
-
-
-
-
+exit;
 
 
 
@@ -387,75 +407,172 @@ sub get_info {
 
 
 sub dl_anime {
-	
-		foreach(@proxer_watch) {
-		my $dl_lang;
-		my $dl_host;
-		my $dl_no;
-		my $dl_wishlang;
-		my $dl_wishhost;
-		my @dl_avhoster;
-		my $active;
-		my $dl_link;
-		
-		$active = $_;
-		
-		if ($_->{'no'} eq '0') { # recognize the first entry
-			next;
-		}
-		
-		$dl_no = $_->{'no'};
-		
-			# select language
-		foreach(@wishlang) {
-			$dl_wishlang = $_;
-			foreach(@{$active->{'lang'}}) {
-				if($dl_wishlang eq $_) {
-					$dl_lang = $_;
-					last;
-				}
-			}
-			last if $dl_lang;
-		}
-		VERBOSE("Selected $dl_lang for $dl_no");
-		
-		@dl_avhoster = get_hoster("http://proxer.me/watch/$proxer_id/$dl_no/$dl_lang");
-		foreach(@wishhost) {
-			$dl_wishhost = $_;
-			foreach(@dl_avhoster) {
-				if($dl_wishhost eq $_->{'type'}) {
-					$dl_host = $_;
-					last;
-				}
-			}
-			last if $dl_host;
-		}
-		
-		if(!$dl_lang or !$dl_host) {
-			INFO("No suitable host or language found for $dl_no. Skip");
-			sleep(3);
-			next;
-		}
-		
-		##### DOWNLOAD #####
-		
-		
-		
-		$dl_link = gen_link($dl_host);
-		
-		INFO($meta{'title'}, ":$dl_no\@$dl_host->{'name'}\n");
-		
-		INFO("Downloading $dl_no");
-		
-		system("youtube-dl -q -o '$file_path/$dl_no.mp4' $dl_link");
-		
-		VERBOSE("Selected $dl_host for $dl_no");
-		INFO("waiting...");
-		sleep(3);
-	}
+    foreach($_[0]) {
+        my $dl_lang;
+        my $dl_host;
+        my $dl_no;
+        my $dl_wishlang;
+        my $dl_wishhost;
+        my @dl_avhoster;
+        my $active;
+        my $dl_link;
+        
+        $active = $_;
+        
+        if ($_->{'no'} eq '0') { # recognize the first entry
+            next;
+        }
+        
+        $dl_no = $_->{'no'};
+        
+            # select language
+        foreach(@wishlang_anime) {
+            $dl_wishlang = $_;
+            foreach(@{$active->{'lang'}}) {
+                if($dl_wishlang eq $_) {
+                    $dl_lang = $_;
+                    last;
+                }
+            }
+            last if $dl_lang;
+        }
+        VERBOSE("Selected $dl_lang for $dl_no");
+        
+        @dl_avhoster = get_hoster("http://proxer.me/watch/$proxer_id/$dl_no/$dl_lang");
+        foreach(@wishhost) {
+            $dl_wishhost = $_;
+            foreach(@dl_avhoster) {
+                if($dl_wishhost eq $_->{'type'}) {
+                    $dl_host = $_;
+                    last;
+                }
+            }
+            last if $dl_host;
+        }
+        
+        if(!$dl_lang or !$dl_host) {
+            INFO("No suitable host or language found for $dl_no. Skip");
+            sleep(3);
+            next;
+        }
+        
+        ##### DOWNLOAD #####
+        
+        
+        
+        $dl_link = gen_link($dl_host);
+        
+        INFO($meta{'title'}, ":$dl_no\@$dl_host->{'name'}\n");
+        
+        INFO("Downloading $dl_no");
+        
+        system("youtube-dl -q -o '$file_path/$dl_no.mp4' $dl_link");
+        
+        VERBOSE("Selected $dl_host for $dl_no");
+        INFO("waiting...");
+        sleep(3);
+    }
 }
 
-sub anime_list {
+sub dl_manga {
+    INFO("Start with downloading");
+    foreach(@proxer_watch) {
+        my $dl_lang;
+        my $dl_no;
+        my $dl_wishlang;
+        my $active;
+        my $dl_link;
+        my @dl_pages;
+        my $dl_server;
+        
+        $active = $_;
+        
+        if ($_->{'no'} eq '0') { # recognize the first entry
+            next;
+        }
+        
+        $dl_no = $_->{'no'};
+        
+            # select language
+        foreach(@wishlang_manga) {
+            $dl_wishlang = $_;
+            foreach(@{$active->{'lang'}}) {
+                if($dl_wishlang eq $_) {
+                    $dl_lang = $_;
+                    last;
+                }
+            }
+            last if $dl_lang;
+        }
+        
+        if(!$dl_lang) {
+            INFO("No suitable language found for $dl_no. Skip");
+            sleep(3);
+            next;
+        }
+        VERBOSE("Selected $dl_lang for $dl_no");
+        
+        
+        ($dl_server, @dl_pages) = get_pages("http://proxer.me/read/$proxer_id/$dl_no/$dl_lang");
+        
+        
+        ##### DOWNLOAD #####
+        
+       
+        
+        foreach(@dl_pages) {
+            open(PAGE, '>', "$file_path/$_->[0]");
+            print PAGE (dl($dl_server.$_->[0]));
+            close(PAGE);
+        }
+        die;
+        
+        INFO($meta{'title'}, ":$dl_no");
+        
+        INFO("Downloading $dl_no");
+        
+        INFO("waiting...");
+        sleep(3);
+    }
+}
+
+sub get_pages {
+    #todo extract streams
+    
+    my $buffer;
+    my $link = $_[0];
+    my @pages;
+    my $serverurl;
+    
+    while(1) {
+        $buffer = eval {
+            dl($link);
+        } or ERROR("Something went wrong while download");
+        
+        if($buffer =~ m/captcha/gi) {
+            #todo display error message and solution
+            print("*** Looks like proxer-ddos protection got us...\n");
+            print("*** Go to -> $link <- and solve the CAPTCHA, then press enter.\n");
+            getc STDIN;
+            next;
+        } else {
+            last;
+        }
+    }
+    
+    $buffer =~ s/\n//g;
+    $buffer =~ m/pages = (\[\[.*?\]\])/igm;
+    
+    @pages = @{JSON::decode_json("$1")};
+    
+    $buffer =~ m/serverurl = '\/\/(.*?)'/i;
+    $serverurl = "http://$1";
+
+    return $serverurl, @pages;
+}
+
+
+sub meta_list {
     foreach(@proxer_watch) {        
         if($_->{'no'} eq '0') { # recognize the first 'info' entry
             print("$_->{'title'}\n");
