@@ -1,6 +1,6 @@
 #proxerdl
 
-Small tool for downloading an Anime from [proxer.me](http://proxer.me).
+Small tool for downloading an anime and manga from [proxer.me](http://proxer.me).
 
 ##Anime:
 For Anime you need [youtube-dl](https://rg3.github.io/youtube-dl/) installed on your system.
