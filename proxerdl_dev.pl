@@ -285,8 +285,6 @@ print FH ("\n");
 print FH ("Describtion: \n$meta{'desc'}\n");
 close(FH);
 
-print($proxer_watch[0]->{'kat'}, "\n");
-
 
 if($proxer_watch[0]->{'kat'} eq 'anime') {
     dl_anime(@proxer_watch);
@@ -550,7 +548,7 @@ sub dl_manga {
             
             $page_buffer = dl("$dl_server/$_->[0]");
             #$page_buffer = "IMAGE";
-            INFO("Download page $_->[0]\r");
+            INFO("Download page $_->[0]       \r");
             open(FILE, '>', "$file_path/$active->{'no'}_$_->[0]");
             print FILE ($page_buffer);
             close(FILE);
