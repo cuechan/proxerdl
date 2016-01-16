@@ -285,6 +285,7 @@ print FH ("\n");
 print FH ("Describtion: \n$meta{'desc'}\n");
 close(FH);
 
+print($proxer_watch[0]->{'kat'}, "\n");
 
 
 if($proxer_watch[0]->{'kat'} eq 'anime') {
@@ -382,13 +383,13 @@ sub dl {
     my $site;
     my $tries = 0;
     
-    VERBOSE("Download $_[0]");
+    VERBOSE("Download @_");
     
     while($tries < 3) {
         $tries++;
         $ua = LWP::UserAgent->new;
         $ua->agent($LWP_useragent);
-        $req = HTTP::Request->new(GET => $_[0]);
+        $req = HTTP::Request->new(GET => @_);
         $res = $ua->request($req);
         if ($res->is_success) {
             return $res->content;
@@ -419,7 +420,7 @@ sub get_info {
     $x =~ m/<b>Season<\/b><\/td><td.*?>(.*?)<\/td>/im;
     my @season = $1 =~ m/>(\w+\W\d\d\d\d)</ig;
     if(!$season[1]) {
-        $season[1] = '***';
+        $season[1] = 'unknown';
     }
     
     my %info = (
@@ -434,7 +435,7 @@ sub get_info {
 
 
 sub dl_anime {
-    foreach($_[0]) {
+    foreach(@_) {
         my $dl_lang;
         my $dl_host;
         my $dl_no;
@@ -505,21 +506,18 @@ sub dl_manga {
     INFO("Start with downloading");
     foreach(@proxer_watch) {
         my $dl_lang;
-        my $dl_no;
         my $dl_wishlang;
         my $active;
         my $dl_link;
         my @dl_pages;
         my $dl_server;
-        my @page_buffer;
+        my $page_buffer;
         
         $active = $_;
         
         if ($_->{'no'} eq '0') { # recognize the first entry
             next;
         }
-        
-        $dl_no = $_->{'no'};
         
             # select language
         foreach(@wishlang_manga) {
@@ -534,35 +532,35 @@ sub dl_manga {
         }
         
         if(!$dl_lang) {
-            INFO("No suitable language found for $dl_no. Skip");
+            INFO("No suitable language found for $active->{'no'}. Skip");
             sleep(3);
             next;
         }
-        VERBOSE("Selected $dl_lang for $dl_no");
+        VERBOSE("Selected $dl_lang for $active->{'no'}.");
         
         
-        ($dl_server, @dl_pages) = get_pages("http://proxer.me/read/$proxer_id/$dl_no/$dl_lang");
+        ($dl_server, @dl_pages) = get_pages("http://proxer.me/read/$proxer_id/$active->{'no'}/$dl_lang");
         
         
         ##### DOWNLOAD #####
         
-       
         # Download all pages
         foreach(@dl_pages) {
             INFO("Download page: $_->[0]\r");
-            push(@page_buffer, [$_->[0], dl($dl_server.$_->[0])]);
-        }
-        
-        foreach(@page_buffer) {
-            INFO("Write to disk: $_[0]\r");
-            open(FILE, '>', "$file_path/CH$dl_no$_->[0]");
-            print FILE ($_->[1]);
+            
+            #$page_buffer = dl("$dl_server/$_->[0]");
+            $page_buffer = "IMAGE";
+            print("$dl_server/$_->[0] -> ");
+            print("$file_path/$active->{'no'}_$_->[0]\n");
+            
+            open(FILE, '>', "$file_path/$active->{'no'}_$_->[0]");
+            print FILE ($page_buffer);
             close(FILE);
         }
         
-        INFO($meta{'title'}, ":$dl_no");
+        INFO($meta{'title'}, ":$active->{'no'}");
         
-        INFO("Downloading $dl_no");
+        INFO("Downloading $active->{'no'}");
         
         INFO("waiting...");
         sleep(3);
@@ -598,7 +596,7 @@ sub get_pages {
     
     @pages = @{JSON::decode_json("$1")};
     
-    $buffer =~ m/serverurl = '\/\/(.*?)'/i;
+    $buffer =~ m/serverurl = '\/\/(.*?)\/'/i;
     $serverurl = "http://$1";
 
     return $serverurl, @pages;
@@ -667,6 +665,7 @@ Usage: proxerdl --link or --id [options...] destination
     
     --list          List the structure of the anime. No Downloading.
     --no-dir        Do not create a directory for the Anime.
+    --proxer        ...
     destination     Specify the destination for the download. By default its your current directory/<anime>/.
     
 
@@ -693,7 +692,11 @@ sub VERBOSE {
         print color('bold yellow');
         print("[INFO] ");
         print color('reset');
+        if($_[scalar(@_)-1] !~ m/[\r|\b]$/) {
         print(@_, "\n");
+        }else {
+            print(@_);
+        }
         #exit;
     }else {
         #exit;
