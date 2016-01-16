@@ -548,11 +548,9 @@ sub dl_manga {
         foreach(@dl_pages) {
             INFO("Download page: $_->[0]\r");
             
-            #$page_buffer = dl("$dl_server/$_->[0]");
-            $page_buffer = "IMAGE";
-            print("$dl_server/$_->[0] -> ");
-            print("$file_path/$active->{'no'}_$_->[0]\n");
-            
+            $page_buffer = dl("$dl_server/$_->[0]");
+            #$page_buffer = "IMAGE";
+            INFO("Download page $_->[0]\r");
             open(FILE, '>', "$file_path/$active->{'no'}_$_->[0]");
             print FILE ($page_buffer);
             close(FILE);
