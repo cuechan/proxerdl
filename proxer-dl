@@ -17,7 +17,7 @@ use Time::HiRes qw( usleep clock );
 # todo: more verbose output.
 # todo: change output format ('SxxExx.mp4', 'xxx.mp4', '<name>-xxx.mp4').
 # todo: add more export possibilities. 
-# todo: add manga support 
+# todo: download cover image
 
 
 ##########################
@@ -221,15 +221,7 @@ $proxer_watch[0] = {
 # prepare your... array
 
 # merge the different language entris together
-if($proxer_json->{'kat'} eq 'anime') {
-    #foreach($proxer_watch_start .. $proxer_watch_stop) {
-        #push(@proxer_watch, {
-            #'no' => $_, 
-            #'lang' => [],
-            #'hoster' => [],
-        #});
-    #}
-    
+if($proxer_json->{'kat'} eq 'anime') {    
     foreach(@{$proxer_json->{'data'}}) {
         push(@{$proxer_watch[$_->{'no'}]->{'hoster'}}, split(',', $_->{'types'}));
         push(@{$proxer_watch[$_->{'no'}]->{'lang'}}, $_->{'typ'});
@@ -237,14 +229,6 @@ if($proxer_json->{'kat'} eq 'anime') {
     }
 }
 elsif($proxer_json->{'kat'} eq 'manga') {
-    #foreach($proxer_watch_start .. $proxer_watch_stop) {
-        #push(@proxer_watch, {
-            #'no' => $_, 
-            #'lang' => [],
-            #'title' => [],
-        #});
-    #}
-    
     foreach(@{$proxer_json->{'data'}}) {
         $proxer_watch[$_->{'no'}]{'title'} = $_->{'title'};
         push(@{$proxer_watch[$_->{'no'}]->{'lang'}}, $_->{'typ'});
@@ -285,8 +269,6 @@ print FH ("\n");
 print FH ("Describtion: \n$meta{'desc'}\n");
 close(FH);
 
-print($proxer_watch[0]->{'kat'}, "\n");
-
 
 if($proxer_watch[0]->{'kat'} eq 'anime') {
     dl_anime(@proxer_watch);
@@ -298,35 +280,9 @@ else {
     ERROR("Something went wrong");
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+INFO("Download complete");
 
 exit;
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ###############################
@@ -355,6 +311,7 @@ sub get_hoster {
         } else {
             last;
         }
+        
     }
     
     $buffer =~ m/streams.*?=.*?(\[.+?\])/i;
@@ -395,8 +352,8 @@ sub dl {
             return $res->content;
             last;
         } else {
-            print("Download error. Check your internet connection. waiting 10s\n");
-            VERBOSE("Download wasnt successfull. Try again in 10s");
+            print("Download error. Waiting 10s\n");
+            VERBOSE("Download wasnt successfull. Check your internet connection. Try again in 10s");
             sleep(10);
             next;
         }
@@ -490,9 +447,7 @@ sub dl_anime {
         
         $dl_link = gen_link($dl_host);
         
-        INFO($meta{'title'}, ":$dl_no\@$dl_host->{'name'}\n");
-        
-        INFO("Downloading $dl_no");
+        print("$dl_link\n");
         
         system("youtube-dl -q -o '$file_path/$dl_no.mp4' $dl_link");
         
@@ -503,7 +458,7 @@ sub dl_anime {
 }
 
 sub dl_manga {
-    INFO("Start with downloading");
+    INFO("Start downloading");
     foreach(@proxer_watch) {
         my $dl_lang;
         my $dl_wishlang;
@@ -514,6 +469,8 @@ sub dl_manga {
         my $page_buffer;
         
         $active = $_;
+        
+        INFO($meta{'title'}, ": $active->{'no'}");
         
         if ($_->{'no'} eq '0') { # recognize the first entry
             next;
@@ -546,21 +503,20 @@ sub dl_manga {
         
         # Download all pages
         foreach(@dl_pages) {
-            INFO("Download page: $_->[0]\r");
-            
-            $page_buffer = dl("$dl_server/$_->[0]");
-            #$page_buffer = "IMAGE";
-            INFO("Download page $_->[0]       \r");
-            open(FILE, '>', "$file_path/$active->{'no'}_$_->[0]");
-            print FILE ($page_buffer);
-            close(FILE);
+            INFO($meta{'title'}, ": $active->{'no'}: $active->{'no'}: $_->[0]                  \r");
+            usleep(250000);
+            if(!-e "$file_path/$active->{'no'}_$_->[0]") {
+                $page_buffer = dl("$dl_server/$_->[0]");
+                #$page_buffer = "IMAGE";
+                open(FILE, '>', "$file_path/$active->{'no'}_$_->[0]");
+                print FILE ($page_buffer);
+                close(FILE);
+            } else {
+                # 
+            }
         }
         
-        INFO($meta{'title'}, ":$active->{'no'}");
-        
-        INFO("Downloading $active->{'no'}");
-        
-        INFO("waiting...");
+        # chillout for the ddos protection;
         sleep(3);
     }
 }
@@ -581,7 +537,7 @@ sub get_pages {
         if($buffer =~ m/captcha/gi) {
             #todo display error message and solution
             print("*** Looks like proxer-ddos protection got us...\n");
-            print("*** Go to -> $link <- and solve the CAPTCHA, then press enter.\n");
+            print("*** Go to -> $link <- and solve the CAPTCHA, then press enter.");
             getc STDIN;
             next;
         } else {
