@@ -7,7 +7,7 @@ use JSON;
 use Term::ANSIColor;
 use Getopt::Long;
 use Cwd;
-use Data::Dumper;
+#use Data::Dumper;
 use Time::HiRes qw( usleep clock );
 
 ########################
@@ -430,15 +430,15 @@ sub dl_anime {
         }
         
         ##### DOWNLOAD #####
-		#print Dumper($dl_host);
+        #print Dumper($dl_host);
         
         $dl_link = $dl_host->{'replace'};
         # Some hotfix stuff:
         if($dl_link !~ m/#/) {
-			$dl_link = $dl_host->{'code'};
-		} else {
-			$dl_link =~ s/#/$dl_host->{'code'}/;
-		}
+            $dl_link = $dl_host->{'code'};
+        } else {
+            $dl_link =~ s/#/$dl_host->{'code'}/;
+        }
         
         #print(download_media($dl_link), "\n");
         
@@ -452,124 +452,124 @@ sub dl_anime {
 }
 
 sub download_media {
-	my $site_link = $_[0];
-	
-	if($site_link =~ m/stream\.proxer\.me/i) {
-		my $ua = LWP::UserAgent->new();
-		$ua->agent($LWP_useragent);
-		$ua->cookie_jar({});
-		
-		my $buffer = $ua->get($site_link);
-		if($buffer->is_error) {
-			return undef();
-		} else {
-			$buffer = $buffer->content;
-		}
-		my ($file_link) = $buffer =~ m/"(http:\/\/.*\.mp4)"/i;
-		
-		return $file_link;
-	}
-	elsif($site_link =~ m/streamcloud\.eu/i) {
-		# streamcloud downloader
-		# post data to streamcloud:
-		# op =>
-		# usr_login => 
-		# id =>
-		# fname =>
-		# referer =>
-		# hash =>
-		# imhuman =>
-		my $ua = LWP::UserAgent->new();
-		$ua->agent($LWP_useragent);
-		$ua->cookie_jar({});
-		
-		
-		my $buffer = $ua->get($site_link);
-		if($buffer->is_error) {
-			return undef();
-		} else {
-			$buffer = $buffer->content;
-		}
-		
-		my %params;
-		
-		# crapcode:
-		$buffer =~ m/name="op".*?value="(.*?)"/i;
-		$params{'op'} = $1;
-		$buffer =~ m/name="usr_login".*?value="(.*?)"/i;
-		$params{'usr_login'} = $1;
-		$buffer =~ m/name="id".*?value="(.*?)"/i;
-		$params{'id'} = $1;
-		$buffer =~ m/name="fname".*?value="(.*?)"/i;
-		$params{'fname'} = $1;
-		#$buffer =~ m/name="referer".*?value="(.*?)"/i;
-		$params{'referer'} = 'http://proxer.me'; # $1;
-		$buffer =~ m/name="hash".*?value="(.*?)"/i;
-		$params{'hash'} = $1;
-		$buffer =~ m/name="imhuman".*?value="(.*?)"/i;
-		$params{'imhuman'} = $1;
-		
-		#print Dumper(%params);
-		
-		sleep(11);
-		$buffer = $ua->post($site_link, 
-			{
-				'op' => $params{'op'},
-				'usr_login' => $params{'usr_login'},
-				'id' => $params{'id'},
-				'fname' => $params{'fname'},
-				'referer' => $params{'referer'},
-				'hash' => $params{'hash'},
-				'imhuman' => $params{'imhuman'},	
-			}
-		);
-		if($buffer->is_error) {
-			return undef();
-		}
-		
-		my ($file_link) = $buffer->content =~ m/"(.*?\.mp4)"/i;
-		
-		return $file_link;
-	}
-	elsif($site_link =~ m/clipfish\.de/i) {
-		# clipfish downloader		
-		my $ua = LWP::UserAgent->new();
-		$ua->agent($LWP_useragent);
-		
-		
-		$site_link =~ m/clipfish\.de\/.*?video\/(\d*)/i;
-		my $id = $1;
-		
-		my $buffer = $ua->get('http://www.clipfish.de/devapi/id/'.$id.'?format=json');
-		if($buffer->is_error) {
-			return undef();
-		} else {
-			$buffer = $buffer->content;
-		}
-		
-		$buffer = JSON::decode_json($buffer) or return undef;
-		
-		$buffer = $buffer->{'items'}[0]->{'media_thumbnail'};
-		my ($md5) = ($buffer =~ m/\/([a-z0-9]{32})\//); # match on md5
-		my ($pre) = ($md5 =~ m/([a-z0-9]{2}$)/);
-		
-		return 'http://video.clipfish.de/media/'.$pre.'/'.$md5.'.mp4';
-	} else {
-		# fallback mode
-		INFO("Hoster not supported. Fallback to youtube-dl");
-		
-		my $buffer = qx(youtube-dl -q -q $site_link);
-		my ($file_link) = $buffer =~ m/(http:\/\/.*\.mp4)/i;
-		
-		my $ua = LWP::UserAgent->new();
-		$ua->agent($LWP_useragent);
-		$ua->cookie_jar({});
-		$ua->show_progress(1);
-		
-		return $file_link;
-	}
-		
-		
+    my $site_link = $_[0];
+    
+    if($site_link =~ m/stream\.proxer\.me/i) {
+        my $ua = LWP::UserAgent->new();
+        $ua->agent($LWP_useragent);
+        $ua->cookie_jar({});
+        
+        my $buffer = $ua->get($site_link);
+        if($buffer->is_error) {
+            return undef();
+        } else {
+            $buffer = $buffer->content;
+        }
+        my ($file_link) = $buffer =~ m/"(http:\/\/.*\.mp4)"/i;
+        
+        return $file_link;
+    }
+    elsif($site_link =~ m/streamcloud\.eu/i) {
+        # streamcloud downloader
+        # post data to streamcloud:
+        # op =>
+        # usr_login => 
+        # id =>
+        # fname =>
+        # referer =>
+        # hash =>
+        # imhuman =>
+        my $ua = LWP::UserAgent->new();
+        $ua->agent($LWP_useragent);
+        $ua->cookie_jar({});
+        
+        
+        my $buffer = $ua->get($site_link);
+        if($buffer->is_error) {
+            return undef();
+        } else {
+            $buffer = $buffer->content;
+        }
+        
+        my %params;
+        
+        # crapcode:
+        $buffer =~ m/name="op".*?value="(.*?)"/i;
+        $params{'op'} = $1;
+        $buffer =~ m/name="usr_login".*?value="(.*?)"/i;
+        $params{'usr_login'} = $1;
+        $buffer =~ m/name="id".*?value="(.*?)"/i;
+        $params{'id'} = $1;
+        $buffer =~ m/name="fname".*?value="(.*?)"/i;
+        $params{'fname'} = $1;
+        #$buffer =~ m/name="referer".*?value="(.*?)"/i;
+        $params{'referer'} = 'http://proxer.me'; # $1;
+        $buffer =~ m/name="hash".*?value="(.*?)"/i;
+        $params{'hash'} = $1;
+        $buffer =~ m/name="imhuman".*?value="(.*?)"/i;
+        $params{'imhuman'} = $1;
+        
+        #print Dumper(%params);
+        
+        sleep(11);
+        $buffer = $ua->post($site_link, 
+            {
+                'op' => $params{'op'},
+                'usr_login' => $params{'usr_login'},
+                'id' => $params{'id'},
+                'fname' => $params{'fname'},
+                'referer' => $params{'referer'},
+                'hash' => $params{'hash'},
+                'imhuman' => $params{'imhuman'},    
+            }
+        );
+        if($buffer->is_error) {
+            return undef();
+        }
+        
+        my ($file_link) = $buffer->content =~ m/"(.*?\.mp4)"/i;
+        
+        return $file_link;
+    }
+    elsif($site_link =~ m/clipfish\.de/i) {
+        # clipfish downloader       
+        my $ua = LWP::UserAgent->new();
+        $ua->agent($LWP_useragent);
+        
+        
+        $site_link =~ m/clipfish\.de\/.*?video\/(\d*)/i;
+        my $id = $1;
+        
+        my $buffer = $ua->get('http://www.clipfish.de/devapi/id/'.$id.'?format=json');
+        if($buffer->is_error) {
+            return undef();
+        } else {
+            $buffer = $buffer->content;
+        }
+        
+        $buffer = JSON::decode_json($buffer) or return undef;
+        
+        $buffer = $buffer->{'items'}[0]->{'media_thumbnail'};
+        my ($md5) = ($buffer =~ m/\/([a-z0-9]{32})\//); # match on md5
+        my ($pre) = ($md5 =~ m/([a-z0-9]{2}$)/);
+        
+        return 'http://video.clipfish.de/media/'.$pre.'/'.$md5.'.mp4';
+    } else {
+        # fallback mode
+        INFO("Hoster not supported. Fallback to youtube-dl");
+        
+        my $buffer = qx(youtube-dl -q -q $site_link);
+        my ($file_link) = $buffer =~ m/(http:\/\/.*\.mp4)/i;
+        
+        my $ua = LWP::UserAgent->new();
+        $ua->agent($LWP_useragent);
+        $ua->cookie_jar({});
+        $ua->show_progress(1);
+        
+        return $file_link;
+    }
+        
+        
 }
 
 sub dl_manga {
