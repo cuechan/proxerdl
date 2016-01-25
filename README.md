@@ -24,8 +24,8 @@ All in all this software is usable. But its still a bit buggy.
 
 ###Installation
 
-You can simply run the installation script.
-`./install.sh`
+You can simply run the installation script
+`./install.sh`.
 It just copies `proxer-dl` to `/usr/bin/` and make it executable.
 
 ###Usage
