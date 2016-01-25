@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # superadvanced installation script...
-cp proxerdl_dev.pl proxer-dl
-chmod a+x proxer-dl
-sudo cp -p proxer-dl /usr/bin/
+sudo cp proxerdl.pl /usr/bin/proxer-dl
+chmod a+x /usr/bin/proxer-dl
 
 echo 'proxer-dl installed'
