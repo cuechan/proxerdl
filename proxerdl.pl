@@ -19,7 +19,6 @@ use Time::HiRes qw( usleep clock );
 # todo: add more export possibilities. 
 # todo: download cover image
 
-
 ##########################
 #####     CHECKS     #####
 ##########################
@@ -43,7 +42,7 @@ BEGIN {
 
 
 my $LWP_useragent = "Proxerdl/dev_v0.01";
-my @wishhost = ("proxer-stream", "clipfish-extern", "streamcloud");
+my @wishhost = ("proxer-stream", "streamcloud", "clipfish-extern");
 my @wishlang_anime = ("gerdub", "gersub", "engsub", "engdub");
 my @wishlang_manga = ("de", "en");
 
@@ -282,6 +281,8 @@ else {
 
 INFO("Download complete");
 
+proxer();
+
 exit;
 
 
@@ -320,19 +321,6 @@ sub get_hoster {
     return @hoster;
 }
 
-sub gen_link {
-    my $url;
-    my $code;
-    
-    $url = $_[0]->{'replace'};
-    $code = $_[0]->{'code'};
-    
-    $url =~ s/#/$code/g;
-    $url =~ s/\\//g;
-    
-    return $url;
-}
-
 sub dl {
     my $req;
     my $res;
@@ -352,8 +340,8 @@ sub dl {
             return $res->content;
             last;
         } else {
-            print("Download error. Waiting 10s\n");
-            VERBOSE("Download wasnt successfull. Check your internet connection. Try again in 10s");
+            print("** Download error. Waiting 10s\n");
+            VERBOSE("** Download wasnt successfull. Check your internet connection. Try again in 10s");
             sleep(10);
             next;
         }
@@ -401,6 +389,7 @@ sub dl_anime {
         my @dl_avhoster;
         my $active;
         my $dl_link;
+        my $skipped = 0;
         
         $active = $_;
         
@@ -408,9 +397,7 @@ sub dl_anime {
             next;
         }
         
-        $dl_no = $_->{'no'};
-        
-            # select language
+        # select language
         foreach(@wishlang_anime) {
             $dl_wishlang = $_;
             foreach(@{$active->{'lang'}}) {
@@ -421,9 +408,9 @@ sub dl_anime {
             }
             last if $dl_lang;
         }
-        VERBOSE("Selected $dl_lang for $dl_no");
+        VERBOSE("Selected $dl_lang for $active->{'no'}");
         
-        @dl_avhoster = get_hoster("http://proxer.me/watch/$proxer_id/$dl_no/$dl_lang");
+        @dl_avhoster = get_hoster("http://proxer.me/watch/$proxer_id/$active->{'no'}/$dl_lang");
         foreach(@wishhost) {
             $dl_wishhost = $_;
             foreach(@dl_avhoster) {
@@ -436,25 +423,174 @@ sub dl_anime {
         }
         
         if(!$dl_lang or !$dl_host) {
-            INFO("No suitable host or language found for $dl_no. Skip");
+            INFO("No suitable host or language found for $active->{'no'}. Skip");
+            $skipped++;
             sleep(3);
             next;
         }
         
+        $dl_link = $dl_host->{'replace'};
+        # Some hotfix stuff:
+        if($dl_link !~ m/#/) {
+            $dl_link = $dl_host->{'code'};
+        } else {
+            $dl_link =~ s/#/$dl_host->{'code'}/;
+        }
+        
+        
         ##### DOWNLOAD #####
         
+        my $ua = LWP::UserAgent->new();
+        $ua->agent($LWP_useragent);
+        $ua->show_progress(1);
+        
+        my $link = video_link($dl_link);
+        if(!$link) {
+            $skipped++;
+            next;
+        }
+        
+        my $buffer = $ua->get($link);
+        
+        if($buffer->status_line !~ m/200/) {
+            $skipped++;
+            next;
+        }
+        
+        # todo Generate fancy filenames
+        
+        my $file_name = $active->{'no'}.'.mp4';
+        
+        open(FH, '>', $file_path.'/'.$file_name) or ERROR("Cant write file: $!");
+        print FH $buffer;
+        close(FH);
         
         
-        $dl_link = gen_link($dl_host);
         
-        print("$dl_link\n");
-        
-        system("youtube-dl -q -o '$file_path/$dl_no.mp4' $dl_link");
-        
-        VERBOSE("Selected $dl_host for $dl_no");
-        INFO("waiting...");
+        VERBOSE("waiting...");
         sleep(3);
     }
+}
+
+sub video_link {
+    my $site_link = $_[0];
+    
+    if($site_link =~ m/stream\.proxer\.me/i) {
+        my $ua = LWP::UserAgent->new();
+        $ua->agent($LWP_useragent);
+        $ua->cookie_jar({});
+        
+        my $buffer = $ua->get($site_link);
+        if($buffer->is_error) {
+            return undef();
+        } else {
+            $buffer = $buffer->content;
+        }
+        my ($file_link) = $buffer =~ m/"(http:\/\/.*\.mp4)"/i;
+        
+        return $file_link;
+    }
+    elsif($site_link =~ m/streamcloud\.eu/i) {
+        # streamcloud downloader
+        # post data to streamcloud:
+        # op =>
+        # usr_login => 
+        # id =>
+        # fname =>
+        # referer =>
+        # hash =>
+        # imhuman =>
+        my $ua = LWP::UserAgent->new();
+        $ua->agent($LWP_useragent);
+        $ua->cookie_jar({});
+        
+        
+        my $buffer = $ua->get($site_link);
+        if($buffer->is_error) {
+            return undef();
+        } else {
+            $buffer = $buffer->content;
+        }
+        
+        my %params;
+        
+        # crapcode:
+        $buffer =~ m/name="op".*?value="(.*?)"/i;
+        $params{'op'} = $1;
+        $buffer =~ m/name="usr_login".*?value="(.*?)"/i;
+        $params{'usr_login'} = $1;
+        $buffer =~ m/name="id".*?value="(.*?)"/i;
+        $params{'id'} = $1;
+        $buffer =~ m/name="fname".*?value="(.*?)"/i;
+        $params{'fname'} = $1;
+        #$buffer =~ m/name="referer".*?value="(.*?)"/i;
+        $params{'referer'} = 'http://proxer.me'; # $1;
+        $buffer =~ m/name="hash".*?value="(.*?)"/i;
+        $params{'hash'} = $1;
+        $buffer =~ m/name="imhuman".*?value="(.*?)"/i;
+        $params{'imhuman'} = $1;
+        
+        #print Dumper(%params);
+        
+        sleep(11);
+        $buffer = $ua->post($site_link, 
+            {
+                'op' => $params{'op'},
+                'usr_login' => $params{'usr_login'},
+                'id' => $params{'id'},
+                'fname' => $params{'fname'},
+                'referer' => $params{'referer'},
+                'hash' => $params{'hash'},
+                'imhuman' => $params{'imhuman'},    
+            }
+        );
+        if($buffer->is_error) {
+            return undef();
+        }
+        
+        my ($file_link) = $buffer->content =~ m/"(.*?\.mp4)"/i;
+        
+        return $file_link;
+    }
+    elsif($site_link =~ m/clipfish\.de/i) {
+        # clipfish downloader       
+        my $ua = LWP::UserAgent->new();
+        $ua->agent($LWP_useragent);
+        
+        
+        $site_link =~ m/clipfish\.de\/.*?video\/(\d*)/i;
+        my $id = $1;
+        
+        my $buffer = $ua->get('http://www.clipfish.de/devapi/id/'.$id.'?format=json');
+        if($buffer->is_error) {
+            return undef();
+        } else {
+            $buffer = $buffer->content;
+        }
+        
+        $buffer = JSON::decode_json($buffer) or return undef;
+        
+        $buffer = $buffer->{'items'}[0]->{'media_thumbnail'};
+        my ($md5) = ($buffer =~ m/\/([a-z0-9]{32})\//); # match on md5
+        my ($pre) = ($md5 =~ m/([a-z0-9]{2}$)/);
+        
+        return 'http://video.clipfish.de/media/'.$pre.'/'.$md5.'.mp4';
+    } else {
+        # fallback mode
+        INFO("Hoster not supported. Fallback to youtube-dl");
+        
+        my $buffer = qx(youtube-dl -q -q $site_link);
+        my ($file_link) = $buffer =~ m/(http:\/\/.*\.mp4)/i;
+        
+        my $ua = LWP::UserAgent->new();
+        $ua->agent($LWP_useragent);
+        $ua->cookie_jar({});
+        $ua->show_progress(1);
+        
+        return $file_link;
+    }
+        
+        
 }
 
 sub dl_manga {

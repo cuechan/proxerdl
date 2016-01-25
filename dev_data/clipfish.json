@@ -1,0 +1,67 @@
+$VAR1 = {
+          'items' => [
+                       {
+                         'special_ivw_tag' => 'clipfish/specials/anime/clannad/player',
+                         'width' => '640',
+                         'media_videourl' => 'http://hds.fra.clipfish.de/hds-vod-enc/media/fd/4b187615db1fac1ba14395cde4bc40fd.mp4.f4m',
+                         'media_player' => 'http://www.clipfish.de/video/4175360/',
+                         'vid' => '4175360',
+                         'media_views' => '67396',
+                         'media_votevalue' => '4.87',
+                         'media_videourl_hls' => 'http://hls.fra.clipfish.de/hls-vod-enc/media/fd/4b187615db1fac1ba14395cde4bc40fd.mp4.m3u8',
+                         'media_comments' => '',
+                         'media_content_thumbnail_path' => 'http://autoimg.clipfish.de/autoimg/4b187615db1fac1ba14395cde4bc40fd/',
+                         'media_category' => 'anime anime-stream clannad clannad anime gratis-stream magical-girl-anime nagisa okazaki tomoya',
+                         'geo_countries' => 'DE, AT, CH, BOT',
+                         'creation_place' => '',
+                         'height' => '360',
+                         'media_credit' => 'filmconfect-serie',
+                         'videoplaza_share' => 'rtl_clipfish/clannad',
+                         'title' => 'S01 E01 - Clannad - Vol. 1',
+                         'geoblocking' => 'whitelist',
+                         'descr' => "Okazaki Tomoya ist unmotiviert, faul und oft zu sp\x{e4}t in der Schule. Eines Tages lernt er die sch\x{fc}chterne Furukawa Nagisa kennen und \x{e4}ndert seine Ansichten gegen\x{fc}ber dem Leben. Er beschlie\x{df}t Zeit mit ihr zu verbringen und hilft ihr dabei, die Tr\x{e4}ume die sie hat, umzusetzen. Dabei begegnen den beiden viele schr\x{e4}ge Gestalten, die sich aber als Freunde herausstellen? Clannad - Die romantische Anime-Serie im kostenlosen und legalen Video-Stream (Ger Dub).",
+                         'media_length' => '1451',
+                         'pubDate' => 'Fri, 27 Feb 2015 14:50:00 +0100',
+                         'media_image_blur' => 'http://autoimg.clipfish.de/autoimg/4b187615db1fac1ba14395cde4bc40fd/0x0/blur,20,8/f27c/s01-e01-clannad-vol-1.jpg',
+                         'description' => "<img src=\"http://autoimg.clipfish.de/autoimg/4b187615db1fac1ba14395cde4bc40fd/154x87/s01-e01-clannad-vol-1.jpg\" align=\"right\" border=\"0\" width=\"154\" height=\"87\" vspace=\"4\" hspace=\"4\" /><p>Okazaki Tomoya ist unmotiviert, faul und oft zu sp\x{e4}t in der Schule. Eines Tages lernt er die sch\x{fc}chterne Furukawa Nagisa kennen und \x{e4}ndert seine Ansichten gegen\x{fc}ber dem Leben. Er beschlie\x{df}t Zeit mit ihr zu verbringen und hilft ihr dabei, die Tr\x{e4}ume die sie hat, umzusetzen. Dabei begegnen den beiden viele schr\x{e4}ge Gestalten, die sich aber als Freunde herausstellen? Clannad - Die romantische Anime-Serie im kostenlosen und legalen Video-Stream (Ger Dub).</p><p>Author: <a href=\"http://www.clipfish.de/user/filmconfect-serie\">filmconfect-serie</a><br/>Keywords:  <a href=\"http://www.clipfish.de/tagvideos/anime\">anime</a> <a href=\"http://www.clipfish.de/tagvideos/anime-stream\">anime-stream</a> <a href=\"http://www.clipfish.de/tagvideos/clannad\">clannad</a> <a href=\"http://www.clipfish.de/tagvideos/clannad+anime\">clannad anime</a> <a href=\"http://www.clipfish.de/tagvideos/gratis-stream\">gratis-stream</a> <a href=\"http://www.clipfish.de/tagvideos/magical-girl-anime\">magical-girl-anime</a> <a href=\"http://www.clipfish.de/tagvideos/nagisa\">nagisa</a> <a href=\"http://www.clipfish.de/tagvideos/okazaki+tomoya\">okazaki tomoya</a><br/>Added: February 27, 2015<br/></p>",
+                         'media_content_thumbnail_large' => 'http://autoimg.clipfish.de/autoimg/4b187615db1fac1ba14395cde4bc40fd/0x0/s01-e01-clannad-vol-1.jpg',
+                         'fsk' => '6',
+                         'videoplaza_cutlist' => '600,1200,2400,3600',
+                         'bitrate' => '1000',
+                         'user' => 'filmconfect-serie',
+                         'guid' => 'http://www.clipfish.de/special/clannad/video/4175360/s01-e01-clannad-vol-1/',
+                         'display_ascpect_ratio' => '16/9',
+                         'title_slug' => 's01-e01-clannad-vol-1',
+                         'media_title' => 'S01 E01 - Clannad - Vol. 1',
+                         'link' => 'http://www.clipfish.de/special/clannad/video/4175360/s01-e01-clannad-vol-1/',
+                         'special' => [
+                                        {
+                                          'fsk' => '12',
+                                          'type' => 'metachannel',
+                                          'id' => '3409',
+                                          'title' => 'ANIME',
+                                          'end' => 3155829300,
+                                          'title_short' => 'anime',
+                                          'start' => 1244037600
+                                        },
+                                        {
+                                          'title' => 'Clannad',
+                                          'fsk' => '6',
+                                          'type' => 'tvspecial',
+                                          'id' => '15485',
+                                          'title_short' => 'clannad',
+                                          'end' => 1925061300,
+                                          'start' => 1425031200
+                                        }
+                                      ],
+                         'currentTime' => '2016-01-24T20:50:07+01:00',
+                         'mimeType' => 'video/mp4',
+                         'content_form' => 'long_form',
+                         'media_thumbnail' => 'http://autoimg.clipfish.de/autoimg/4b187615db1fac1ba14395cde4bc40fd/154x87/s01-e01-clannad-vol-1.jpg'
+                       }
+                     ],
+          'openSearch_itemsPerPage' => 10,
+          'openSearch_totalResults' => 0,
+          'openSearch_startIndex' => 1,
+          'command' => 'id'
+        };
