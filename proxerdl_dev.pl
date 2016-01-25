@@ -389,6 +389,7 @@ sub dl_anime {
         my @dl_avhoster;
         my $active;
         my $dl_link;
+        my $skipped = 0;
         
         $active = $_;
         
@@ -396,9 +397,7 @@ sub dl_anime {
             next;
         }
         
-        $dl_no = $_->{'no'};
-        
-            # select language
+        # select language
         foreach(@wishlang_anime) {
             $dl_wishlang = $_;
             foreach(@{$active->{'lang'}}) {
@@ -409,9 +408,9 @@ sub dl_anime {
             }
             last if $dl_lang;
         }
-        VERBOSE("Selected $dl_lang for $dl_no");
+        VERBOSE("Selected $dl_lang for $active->{'no'}");
         
-        @dl_avhoster = get_hoster("http://proxer.me/watch/$proxer_id/$dl_no/$dl_lang");
+        @dl_avhoster = get_hoster("http://proxer.me/watch/$proxer_id/$active->{'no'}/$dl_lang");
         foreach(@wishhost) {
             $dl_wishhost = $_;
             foreach(@dl_avhoster) {
@@ -424,13 +423,11 @@ sub dl_anime {
         }
         
         if(!$dl_lang or !$dl_host) {
-            INFO("No suitable host or language found for $dl_no. Skip");
+            INFO("No suitable host or language found for $active->{'no'}. Skip");
+            $skipped++;
             sleep(3);
             next;
         }
-        
-        ##### DOWNLOAD #####
-        #print Dumper($dl_host);
         
         $dl_link = $dl_host->{'replace'};
         # Some hotfix stuff:
@@ -440,9 +437,33 @@ sub dl_anime {
             $dl_link =~ s/#/$dl_host->{'code'}/;
         }
         
-        #print(download_media($dl_link), "\n");
         
-        print("DOWNLOAD-LINK: ", $dl_host->{'type'}, "\n");
+        ##### DOWNLOAD #####
+        
+        my $ua = LWP::UserAgent->new();
+        $ua->agent($LWP_useragent);
+        $ua->show_progress(1);
+        
+        my $link = video_link($dl_link);
+        if(!$link) {
+            $skipped++;
+            next;
+        }
+        
+        my $buffer = $ua->get($link);
+        
+        if($buffer->status_line !~ m/200/) {
+            $skipped++;
+            next;
+        }
+        
+        # todo Generate fancy filenames
+        
+        my $file_name = $active->{'no'}.'.mp4';
+        
+        open(FH, '>', $file_path.'/'.$file_name) or ERROR("Cant write file: $!");
+        print FH $buffer;
+        close(FH);
         
         
         
@@ -451,7 +472,7 @@ sub dl_anime {
     }
 }
 
-sub download_media {
+sub video_link {
     my $site_link = $_[0];
     
     if($site_link =~ m/stream\.proxer\.me/i) {
