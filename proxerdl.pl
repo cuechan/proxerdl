@@ -10,6 +10,7 @@ use Cwd;
 use Data::Dumper;
 use Time::HiRes qw( usleep clock );
 
+
 ########################
 #####     TODO     #####
 ########################
@@ -95,7 +96,7 @@ GetOptions(
     'hoster=s' => \$opt_hoster,
     'list' => \$opt_list,
     'no-dir' => \$opt_nodir,
-    );
+);
 
 # parsing opts
 if(!$opt_id and !$opt_link) {
@@ -123,7 +124,7 @@ if($ARGV[0]) {
         $file_path = $ARGV[0];
         VERBOSE("Path: $file_path");
     }
-}else {
+} else {
     $file_path = getcwd();
     VERBOSE("No path given. Set to current location: $file_path");
 }
@@ -149,6 +150,9 @@ if($opt_hoster) {
 # Get all info we need
 
 %meta = get_info($proxer_id);
+
+#print Dumper(%meta);
+
 
 INFO("Title: ", $meta{'title'});
 undef($var);
@@ -251,14 +255,18 @@ if($opt_list) {
 
 
 if(!$opt_nodir) {
-    $file_path .= "/$meta{'title'}";
+    $var = $meta{'title'};
+    $var =~ s/\//\\/g;
+    $var =~ s/^\.//;
+    
+    $file_path .= '/'.$var;
     if(!-d $file_path) {
         VERBOSE("Create directory: $file_path");
         mkdir("$file_path") or ERROR("Cant create folder: $!");
     }
 }
 
-open(FH, '>', "$file_path/$meta{'title'}.txt") or ERROR("Cant open file for summary: $!");
+open(FH, '>', "$file_path/$var.txt") or ERROR("Cant open file for summary: $!");
 print FH ("Title: $meta{'title'}\n");
 print FH ("Genre: "); 
 foreach(@{$meta{'genre'}}) {
@@ -327,19 +335,21 @@ sub dl {
     my $ua;
     my $site;
     my $tries = 0;
+    $ua = LWP::UserAgent->new;
+    $ua->agent($LWP_useragent);
+    $ua->timeout(5);
+    
     
     VERBOSE("Download @_");
     
     while($tries < 3) {
         $tries++;
-        $ua = LWP::UserAgent->new;
-        $ua->agent($LWP_useragent);
         $req = HTTP::Request->new(GET => @_);
         $res = $ua->request($req);
         if ($res->is_success) {
             return $res->content;
             last;
-        } else {
+        } else { 
             print("** Download error. Waiting 10s\n");
             VERBOSE("** Download wasnt successfull. Check your internet connection. Try again in 10s");
             sleep(10);
@@ -353,7 +363,7 @@ sub dl {
 sub get_info {
     my $x = dl("http://proxer.me/info/$_[0]");
     $x =~ s/\n//g;
-        
+    
     my ($title) = $x =~ m/<td>.*?Original titel.*?<\/td><td>(.*?)<\/td>/im;
     
     $x =~ m/<td.*?>.*?genre.*?<\/td><td.*?>(.*?)<\/td>/im;
@@ -363,10 +373,7 @@ sub get_info {
     $desc =~ s/<.*br.*>/ /gi;
     
     $x =~ m/<b>Season<\/b><\/td><td.*?>(.*?)<\/td>/im;
-    my @season = $1 =~ m/>(\w+\W\d\d\d\d)</ig;
-    if(!$season[1]) {
-        $season[1] = 'unknown';
-    }
+    my @season = $1 =~ m/<a.*?>(.*?\d\d\d\d)<\/a.*?>/ig;
     
     my %info = (
         'title' => $title,
@@ -380,6 +387,7 @@ sub get_info {
 
 
 sub dl_anime {
+    my $skipped = 0;
     foreach(@_) {
         my $dl_lang;
         my $dl_host;
@@ -389,7 +397,6 @@ sub dl_anime {
         my @dl_avhoster;
         my $active;
         my $dl_link;
-        my $skipped = 0;
         
         $active = $_;
         
@@ -462,14 +469,13 @@ sub dl_anime {
         my $file_name = $active->{'no'}.'.mp4';
         
         open(FH, '>', $file_path.'/'.$file_name) or ERROR("Cant write file: $!");
-        print FH $buffer;
+        print FH $buffer->decoded_content;
         close(FH);
-        
-        
         
         VERBOSE("waiting...");
         sleep(3);
     }
+    INFO($skipped, " Episodes skipped");
 }
 
 sub video_link {
@@ -673,7 +679,7 @@ sub get_pages {
         if($buffer =~ m/captcha/gi) {
             #todo display error message and solution
             print("*** Looks like proxer-ddos protection got us...\n");
-            print("*** Go to -> $link <- and solve the CAPTCHA, then press enter.");
+            print("*** Go to -> $link <- and solve the CAPTCHA, then press enter.\r");
             getc STDIN;
             next;
         } else {
@@ -770,9 +776,10 @@ sub INFO {
     print color('bold green');
     print("[INFO] ");
     print color('reset');
+    @_ = grep(!undef, @_);
     if($_[scalar(@_)-1] !~ m/[\r|\b]$/) {
         print(@_, "\n");
-    }else {
+    } else {
         print(@_);
     }
 }
@@ -782,6 +789,7 @@ sub VERBOSE {
         print color('bold yellow');
         print("[INFO] ");
         print color('reset');
+        @_ = grep(undef, @_);
         if($_[scalar(@_)-1] !~ m/[\r|\b]$/) {
         print(@_, "\n");
         }else {
