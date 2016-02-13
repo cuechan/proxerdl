@@ -105,6 +105,12 @@ my $file_count = 0;
 my @files;
 my @episodes;
 
+# cookies...
+my $ua = LWP::UserAgent->new;
+$ua->agent($LWP_useragent);
+$ua->timeout(5);
+$ua->cookie_jar( {} );
+
 
 ##########################
 #####     Getopt     #####
@@ -181,10 +187,9 @@ if($opt_hoster) {
 INFO("Title: ", $meta{'title'});
 undef($var);
 foreach(@{$meta{'genre'}}) {
-    $var .= "$_ ";
+    INFO('Genre: ', $_);
 }
-INFO("Genre: $var");
-INFO('Season: ', $meta{'season'}[0], ' - ', $meta{'season'}[1]);
+INFO('Season: ', $meta{'season'});
 
 
 undef($var);
@@ -354,22 +359,16 @@ sub get_hoster {
 }
 
 sub dl {
-    my $req;
     my $res;
-    my $ua;
     my $site;
     my $tries = 0;
-    $ua = LWP::UserAgent->new;
-    $ua->agent($LWP_useragent);
-    $ua->timeout(5);
     
     
     VERBOSE("Download @_");
     
     while($tries < 3) {
         $tries++;
-        $req = HTTP::Request->new(GET => @_);
-        $res = $ua->request($req);
+        $res = $ua->get(@_);
         if ($res->is_success) {
             return $res->content;
             last;
@@ -387,6 +386,12 @@ sub dl {
 sub get_info {
     my $x = dl("http://proxer.me/info/$_[0]");
     $x =~ s/\n//g;
+    $x =~ s/&ouml;/oe/g;
+    $x =~ s/&uuml;/ue/g;
+    $x =~ s/&auml;/ae/g;
+    $x =~ s/&Ouml;/Oe/g;
+    $x =~ s/&Uuml;/Ue/g;
+    $x =~ s/&Auml;/Ae/g;
     
     my ($title) = $x =~ m/<td>.*?Original titel.*?<\/td><td>(.*?)<\/td>/im;
     
@@ -396,14 +401,15 @@ sub get_info {
     my ($desc) = $x =~ m/<b>Beschreibung:<\/b><br>(.*?)<\/td>/im;
     $desc =~ s/<.*br.*>/ /gi;
     
-    $x =~ m/<b>Season<\/b><\/td><td.*?>(.*?)<\/td>/im;
-    my @season = $1 =~ m/<a.*?>(.*?\d\d\d\d)<\/a.*?>/ig;
+    $x =~ m/<tr.*?><td.*?><b>Season<\/b>.*?<\/td><td.*?>(.*?)<\/td><\/tr>/im;
+    my $season = $1;
+    $season =~ s/<.*?>//ig;
     
     my %info = (
         'title' => $title,
         'genre' => [@genre],
         'desc' => $desc,
-        'season' => [@season],
+        'season' => $season,
     );
     
     return %info;
