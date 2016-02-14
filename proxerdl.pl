@@ -26,16 +26,33 @@
 
 use strict;
 use warnings;
-use LWP;
-use JSON;
-use HTTP::Cookies;
 use Term::ANSIColor;
 use Getopt::Long;
 use Cwd;
 use Data::Dumper;
-use Time::HiRes qw( usleep clock );
-use Term::ReadKey;
-use POSIX qw ( strftime );
+use Time::HiRes qw(usleep);
+
+if(!eval {require LWP}) {
+    ERROR("LWP is not installed. Run \'cpan install LWP\' to install.");
+}
+if(!eval {require JSON}) {
+    ERROR("JSON is not installed. Run \'cpan install JSON\' to install.");
+}
+if(!eval {require HTTP::Cookies}) {
+    ERROR("HTTP::Cookies is not installed. Run \'cpan install HTTP::Cookies\' to install.");
+}
+if(!eval {require Term::ReadKey}) {
+    ERROR("Term::ReadKey is not installed. Run \'cpan install Term::ReadKey\' to install.");
+}
+if(!eval {require Math::Round}) {
+    ERROR("Math::Round is not installed. Run \'cpan install Math::Round\' to install.");
+}
+
+Math::Round->import('nearest');
+LWP->import;
+JSON->import;
+HTTP::Cookies->import;
+Term::ReadKey->import;
 
 
 
@@ -55,13 +72,6 @@ $|++; # turn that f*cking buffer off!
 
 # todo is there an other solution that will work on windows
 BEGIN {
-    my $check = qx(which youtube-dl);
-    
-    if(!$check) {
-        print("youtube-dl is not installed. Visit https://rg3.github.io/youtube-dl/.\n");
-        exit;
-    }
-    
     # make sure ctrl + c on passwd prompt doesnt 'mute' STDOUT
     
     $SIG{INT} = sub {
@@ -290,8 +300,8 @@ elsif($proxer_json->{'kat'} eq 'manga') {
 
 # removing undefined entries in @proxer_watch
 @proxer_watch = grep(defined($_), @proxer_watch);
-$meta{'elements'} = scalar(@proxer_watch);
-
+$meta{'elements'} = scalar(@proxer_watch) -1;
+INFO("Episodes: ", $meta{'elements'});
 
 ###################
 ##### OUTPUTS ##### 
@@ -345,7 +355,6 @@ close(FH) or ERROR("Cant close file: $!");
 ##### START DOWNLOADS #####
 ###########################
 
-INFO("Episodes: ", $meta{'elements'});
 
 if($proxer_watch[0]->{'kat'} eq 'anime') {
     dl_anime(@proxer_watch);
@@ -360,38 +369,20 @@ else {
 $dl_sum{'time'}{'end'} = time();
 $dl_sum{'time'}{'all'} = $dl_sum{'time'}{'end'} - $dl_sum{'time'}{'start'};
 
-#$dl_sum{'time'}{'bps'} =  $dl_sum{'time'}{'time'} / $dl_sum{'time'}{'data'};
-
-
 # print a small summary
-print Dumper($dl_sum{'data'});
+$dl_sum{'data'} /= 10**6;
 
+$dl_sum{'bndwth'} = nearest(0.001, $dl_sum{'data'} / $dl_sum{'time'});
+$dl_sum{'data'} = nearest(0.001, $dl_sum{'data'});
 
-
-if($dl_sum{'data'}) {
-    $dl_sum{'test'}{'data'} = $dl_sum{'data'};
-    $dl_sum{'data'}{'unit'} = 'B';
-    if($dl_sum{'data'}{'data'} > 1200) {
-        $dl_sum{'data'}{'data'} /= 1000;
-        $dl_sum{'data'}{'unit'} = 'KB';
-    }
-    if($dl_sum{'data'}{'data'} > 1200) {
-        $dl_sum{'data'}{'data'} /= 1000;
-        $dl_sum{'data'}{'unit'} = 'MB';
-    }
-    if($dl_sum{'data'}{'data'} > 1200) {
-        $dl_sum{'data'}{'data'} /= 1000;
-        $dl_sum{'data'}{'unit'} = 'GB';
-    }
-}
 
 
 
 INFO("Error:       ", $dl_sum{'err'}) if $dl_sum{'err'};
 INFO("Skipped:     ", $dl_sum{'skipped'}) if $dl_sum{'skipped'};
 INFO("Time:        ", $dl_sum{'time'}{'all'}) if $dl_sum{'time'}{'all'};
-INFO("Data:        ", $dl_sum{'data'}{'data'}, $dl_sum{'data'}{'unit'}) if $dl_sum{'data'};
-#INFO("Average bps: ", $dl_sum{'time'}{'bps'});
+INFO("Data:        ", $dl_sum{'data'}, "MB") if $dl_sum{'data'};
+INFO("Bandwidth:   ", $dl_sum{'bndwth'}, "MB/s");
 
 INFO("Download complete");
 
