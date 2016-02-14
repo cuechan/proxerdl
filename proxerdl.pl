@@ -35,6 +35,7 @@ use Cwd;
 use Data::Dumper;
 use Time::HiRes qw( usleep clock );
 use Term::ReadKey;
+use POSIX qw ( strftime );
 
 
 
@@ -43,7 +44,6 @@ use Term::ReadKey;
 ########################
 
 # todo: more verbose output.
-# todo: change output format ('SxxExx.mp4', 'xxx.mp4', '<name>-xxx.mp4').
 # todo: add more export possibilities. 
 # todo: download cover image
 
@@ -106,6 +106,8 @@ my $proxer_watch_stop;
 my $proxer_lang_avaivable;
 
 my %meta;
+
+my %dl_sum;
 
 my $file_path;
 
@@ -194,12 +196,13 @@ if($opt_hoster) {
 #############################
 
 
+# memorize the time
+$dl_sum{'time'}{'start'} = time();
+
+
 # Get all info we need
-
 %meta = get_info($proxer_id);
-
-#print Dumper(%meta);
-
+$meta{'time'} = localtime();
 
 INFO("Title: ", $meta{'title'});
 undef($var);
@@ -240,8 +243,6 @@ while(!$var) {
         push(@{$proxer_json->{'data'}}, $_);
         $proxer_json->{'end'} = $_->{'no'};
     }
-    
-    
 }
 
 
@@ -289,9 +290,17 @@ elsif($proxer_json->{'kat'} eq 'manga') {
 
 # removing undefined entries in @proxer_watch
 @proxer_watch = grep(defined($_), @proxer_watch);
+$meta{'elements'} = scalar(@proxer_watch);
 
 
+###################
 ##### OUTPUTS ##### 
+###################
+
+
+
+
+
 
 
 if($opt_list) {
@@ -312,16 +321,31 @@ if(!$opt_nodir) {
     }
 }
 
-open(FH, '>', "$file_path/$var.txt") or ERROR("Cant open file for summary: $!");
-print FH ("Title: $meta{'title'}\n");
-print FH ("Genre: "); 
-foreach(@{$meta{'genre'}}) {
-    print FH ("$_ ");
-}
-print FH ("\n");
-print FH ("Describtion: \n$meta{'desc'}\n");
-close(FH);
+###################
+##### SUMMARY #####
+###################
 
+# Create a summary file
+open(FH, '>', "$file_path/$var.txt") or ERROR("Cant create file: $!");
+select(FH);
+print($meta{'time'}, "\n");
+print("Title: $meta{'title'}\n");
+print("Episodes/Chapters: $meta{'elements'}\n");
+print("Genres: "); 
+foreach(@{$meta{'genre'}}) {
+    print("$_ ");
+}
+print("\n");
+print("Describtion: \n$meta{'desc'}\n");
+select(STDOUT);
+close(FH) or ERROR("Cant close file: $!");
+
+
+###########################
+##### START DOWNLOADS #####
+###########################
+
+INFO("Episodes: ", $meta{'elements'});
 
 if($proxer_watch[0]->{'kat'} eq 'anime') {
     dl_anime(@proxer_watch);
@@ -332,6 +356,42 @@ elsif($proxer_watch[0]->{'kat'} eq 'manga') {
 else {
     ERROR("Something went wrong");
 }
+
+$dl_sum{'time'}{'end'} = time();
+$dl_sum{'time'}{'all'} = $dl_sum{'time'}{'end'} - $dl_sum{'time'}{'start'};
+
+#$dl_sum{'time'}{'bps'} =  $dl_sum{'time'}{'time'} / $dl_sum{'time'}{'data'};
+
+
+# print a small summary
+print Dumper($dl_sum{'data'});
+
+
+
+if($dl_sum{'data'}) {
+    $dl_sum{'test'}{'data'} = $dl_sum{'data'};
+    $dl_sum{'data'}{'unit'} = 'B';
+    if($dl_sum{'data'}{'data'} > 1200) {
+        $dl_sum{'data'}{'data'} /= 1000;
+        $dl_sum{'data'}{'unit'} = 'KB';
+    }
+    if($dl_sum{'data'}{'data'} > 1200) {
+        $dl_sum{'data'}{'data'} /= 1000;
+        $dl_sum{'data'}{'unit'} = 'MB';
+    }
+    if($dl_sum{'data'}{'data'} > 1200) {
+        $dl_sum{'data'}{'data'} /= 1000;
+        $dl_sum{'data'}{'unit'} = 'GB';
+    }
+}
+
+
+
+INFO("Error:       ", $dl_sum{'err'}) if $dl_sum{'err'};
+INFO("Skipped:     ", $dl_sum{'skipped'}) if $dl_sum{'skipped'};
+INFO("Time:        ", $dl_sum{'time'}{'all'}) if $dl_sum{'time'}{'all'};
+INFO("Data:        ", $dl_sum{'data'}{'data'}, $dl_sum{'data'}{'unit'}) if $dl_sum{'data'};
+#INFO("Average bps: ", $dl_sum{'time'}{'bps'});
 
 INFO("Download complete");
 
@@ -387,6 +447,7 @@ sub dl {
         $tries++;
         $res = $ua->get(@_);
         if ($res->is_success) {
+            $dl_sum{'data'} += length($res->content);
             return $res->content;
             last;
         } else { 
@@ -404,7 +465,7 @@ sub get_info {
     my $x = dl("http://proxer.me/info/$_[0]");
     
     if($x =~ m/logge dich ein/i) {
-        print("** Auth plz\n");
+        print("** Need authentification to access this anime/manga\n");
         login() or ERROR("Authentification failed");
         
         # lets tweak some cookies...
@@ -458,6 +519,8 @@ sub dl_anime {
         
         $active = $_;
         
+        sleep(3);
+        
         if ($_->{'no'} eq '0') { # recognize the first entry
             next;
         }
@@ -489,8 +552,7 @@ sub dl_anime {
         
         if(!$dl_lang or !$dl_host) {
             INFO("No suitable host or language found for $active->{'no'}. Skip");
-            $skipped++;
-            sleep(3);
+            $dl_sum{'skipped'}++;
             next;
         }
         
@@ -505,23 +567,7 @@ sub dl_anime {
         
         ##### DOWNLOAD #####
         
-        $ua->show_progress(1);
-        
-        my $link = video_link($dl_link);
-        if(!$link) {
-            $skipped++;
-            next;
-        }
-        
-        my $buffer = $ua->get($link);
-        
-        if($buffer->status_line !~ m/200/) {
-            $skipped++;
-            next;
-        }
-        
-        
-        # todo Generate fancy filenames
+        # Generate fancy filenames
         my $file_name = $active->{'no'};
         foreach(1 .. 3-length($active->{'no'})) {
             $file_name = "0$file_name";
@@ -531,15 +577,42 @@ sub dl_anime {
         }
         $file_name .= '.mp4';
         
+        # Check if file was already downloaded
+        if(-e $file_path.'/'.$file_name) {
+            $dl_sum{'skipped'}++;
+            next;
+        }
+        
+        
+        
+        
+        my $link = video_link($dl_link);
+        if(!$link) {
+            $dl_sum{'err'}++;
+            next;
+        }
+        
+        
+        $ua->show_progress(1);
+        my $buffer = $ua->get($link);
+        $ua->show_progress(undef);
+        
+        
+        $dl_sum{'data'} += length($buffer->decoded_content);
+        
+        if($buffer->status_line !~ m/200/) {
+            $dl_sum{'err'}++;
+            next;
+        }
+
+
         
         open(FH, '>', $file_path.'/'.$file_name) or ERROR("Cant write file: $!");
         print FH $buffer->decoded_content;
         close(FH);
         
         VERBOSE("waiting...");
-        sleep(3);
     }
-    INFO($skipped, " Episodes skipped");
 }
 
 sub video_link {
@@ -551,6 +624,7 @@ sub video_link {
         $ua->cookie_jar({});
         
         my $buffer = $ua->get($site_link);
+        $dl_sum{'data'} += length($buffer->decoded_content);
         if($buffer->is_error) {
             return undef();
         } else {
@@ -570,12 +644,10 @@ sub video_link {
         # referer =>
         # hash =>
         # imhuman =>
-        my $ua = LWP::UserAgent->new();
-        $ua->agent($LWP_useragent);
-        $ua->cookie_jar({});
         
         
         my $buffer = $ua->get($site_link);
+        $dl_sum{'data'} += length($buffer->decoded_content);
         if($buffer->is_error) {
             return undef();
         } else {
@@ -623,15 +695,14 @@ sub video_link {
         return $file_link;
     }
     elsif($site_link =~ m/clipfish\.de/i) {
-        # clipfish downloader       
-        my $ua = LWP::UserAgent->new();
-        $ua->agent($LWP_useragent);
+        # clipfish downloader
         
         
         $site_link =~ m/clipfish\.de\/.*?video\/(\d*)/i;
         my $id = $1;
         
         my $buffer = $ua->get('http://www.clipfish.de/devapi/id/'.$id.'?format=json');
+        $dl_sum{'data'} += length($buffer->decoded_content);
         if($buffer->is_error) {
             return undef();
         } else {
@@ -817,6 +888,7 @@ sub login {
                 password => $passwd,
             }
         );
+        $dl_sum{'data'} += length($login->decoded_content);
         
         if($login->is_error) {
             print("** Cant connect with proxer: ", $login->status_line, "\n");
