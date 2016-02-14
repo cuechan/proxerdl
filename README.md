@@ -18,6 +18,9 @@ Maybe i'am going to add some other hosters. Not sure yet.
 Perl is needed with following modules:
 - [LWP](http://search.cpan.org/~ether/libwww-perl-6.15/lib/LWP.pm)
 - [JSON](http://search.cpan.org/~makamaka/JSON-2.90/lib/JSON.pm)
+- [Math::Round](http://search.cpan.org/~grommel/Math-Round-0.06/Round.pm)
+- [HTTP::Cookies](http://search.cpan.org/~gaas/HTTP-Cookies-6.01/lib/HTTP/Cookies.pm)
+- [Term::ReadKey](http://search.cpan.org/~jstowe/TermReadKey-2.33/ReadKey.pm)
 
 ~~Unfortunately we can't download hentai.~~
 For downloading hentai or h-manga you need a proxer account.
@@ -32,6 +35,23 @@ You can simply run the installation script
 It just copies `proxer-dl` to `/usr/bin/` and make it executable.
 
 ###Usage
-Type `proxer-dl --help`.
+
+
+    $proxerdl --link or --id [options...] destination
+
+    --id            The id of the anime. e.g. proxer.me/info/<ID>#top.
+    --link          The link to an anime on proxer. this can be the detail page or episodes overview.
+    --lang          Language preferences as comma separated list: gersub,engdub,....
+    --hoster        Hoster preferences as comma separated list: proxerhd,clipfish,streamcloud.
+    
+    --prefix        prefix for filename: '--prefix S01E' -> 'S01E001.mp4'. Use it with --no-dir to add a season to existing.
+    
+    --note          Add the Anime to your proxer watchlist.
+    --list          List the structure of the anime. No Downloading.
+    --no-dir        Do not create a directory for the Anime.
+    --proxer        ...
+    destination     Specify the destination for the download. By default its your current directory/<anime>/.
+`
+    
 
 Take a look at [the LICENSE file](https://github.com/cuechan/proxerdl/blob/master/LICENSE) to see the license.
