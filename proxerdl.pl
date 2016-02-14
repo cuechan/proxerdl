@@ -91,6 +91,7 @@ my $opt_hoster;
 my $opt_lang;
 my $opt_out;
 my $opt_nodir;
+my $opt_prefix;
 
 my @proxer_watch;
 my $proxer_id;
@@ -141,6 +142,7 @@ GetOptions(
     'hoster=s' => \$opt_hoster,
     'list' => \$opt_list,
     'no-dir' => \$opt_nodir,
+    'prefix=s' => \$opt_prefix,
 );
 
 # parsing opts
@@ -335,7 +337,7 @@ INFO("Download complete");
 
 proxer();
 
-exit;
+exit(0);
 
 
 ###############################
@@ -503,8 +505,6 @@ sub dl_anime {
         
         ##### DOWNLOAD #####
         
-        my $ua = LWP::UserAgent->new();
-        $ua->agent($LWP_useragent);
         $ua->show_progress(1);
         
         my $link = video_link($dl_link);
@@ -520,9 +520,17 @@ sub dl_anime {
             next;
         }
         
-        # todo Generate fancy filenames
         
-        my $file_name = $active->{'no'}.'.mp4';
+        # todo Generate fancy filenames
+        my $file_name = $active->{'no'};
+        foreach(1 .. 3-length($active->{'no'})) {
+            $file_name = "0$file_name";
+        }
+        if($opt_prefix) {
+            $file_name = $opt_prefix.$file_name;
+        }
+        $file_name .= '.mp4';
+        
         
         open(FH, '>', $file_path.'/'.$file_name) or ERROR("Cant write file: $!");
         print FH $buffer->decoded_content;
@@ -638,18 +646,7 @@ sub video_link {
         
         return 'http://video.clipfish.de/media/'.$pre.'/'.$md5.'.mp4';
     } else {
-        # fallback mode
-        INFO("Hoster not supported. Fallback to youtube-dl");
-        
-        my $buffer = qx(youtube-dl -q -q $site_link);
-        my ($file_link) = $buffer =~ m/(http:\/\/.*\.mp4)/i;
-        
-        my $ua = LWP::UserAgent->new();
-        $ua->agent($LWP_useragent);
-        $ua->cookie_jar({});
-        $ua->show_progress(1);
-        
-        return $file_link;
+        return undef;
     }
         
         
@@ -862,6 +859,7 @@ Usage: proxerdl --link or --id [options...] destination
     --lang          Language preferences as comma separated list: gersub,engdub,....
     --hoster        Hoster preferences as comma separated list: proxerhd,clipfish,streamcloud.
     
+    --prefix        prefix for filename: '--prefix S01E' -> 'S01E001.mp4'. Use it with --no-dir to add a season to existing.
     
     --list          List the structure of the anime. No Downloading.
     --no-dir        Do not create a directory for the Anime.
