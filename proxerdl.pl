@@ -28,11 +28,14 @@ use strict;
 use warnings;
 use LWP;
 use JSON;
+use HTTP::Cookies;
 use Term::ANSIColor;
 use Getopt::Long;
 use Cwd;
 use Data::Dumper;
 use Time::HiRes qw( usleep clock );
+use Term::ReadKey;
+
 
 
 ########################
@@ -57,6 +60,14 @@ BEGIN {
     if(!$check) {
         print("youtube-dl is not installed. Visit https://rg3.github.io/youtube-dl/.\n");
         exit;
+    }
+    
+    # make sure ctrl + c on passwd prompt doesnt 'mute' STDOUT
+    
+    $SIG{INT} = sub {
+        print("\n** Script stopped.\n");
+        exit(0);
+        
     }
 }
 
@@ -106,10 +117,14 @@ my @files;
 my @episodes;
 
 # cookies...
+my $ua_cookies = HTTP::Cookies->new(
+    #file => './cookies',
+    autosave => 1,
+);
 my $ua = LWP::UserAgent->new;
 $ua->agent($LWP_useragent);
 $ua->timeout(5);
-$ua->cookie_jar( {} );
+$ua->cookie_jar($ua_cookies);
 
 
 ##########################
@@ -385,6 +400,17 @@ sub dl {
 
 sub get_info {
     my $x = dl("http://proxer.me/info/$_[0]");
+    
+    if($x =~ m/logge dich ein/i) {
+        print("** Auth plz\n");
+        login() or ERROR("Authentification failed");
+        
+        # lets tweak some cookies...
+        $ua_cookies->{'COOKIES'}->{'proxer.me'}->{'/'}->{'adult'} = [0, 1, undef, 1, undef, time() +1200];
+        
+        $x = dl("http://proxer.me/info/$_[0]");
+    }
+    
     $x =~ s/\n//g;
     $x =~ s/&ouml;/oe/g;
     $x =~ s/&uuml;/ue/g;
@@ -770,6 +796,54 @@ sub meta_list {
         }
     }
 }
+
+sub login {
+    my $tries = 0;
+    
+    while($tries < 3) {
+        $tries++;
+        
+        print("** Username: ");
+        my $username = <STDIN>;
+        chomp($username);
+        print("** Password: ");
+        ReadMode('noecho');
+        my $passwd = <STDIN>;
+        ReadMode('normal');
+        print("\n");
+        chomp($passwd);
+        
+        
+        my $login = $ua->post('https://proxer.me/login?format=json&action=login',
+            {
+                username => $username,
+                password => $passwd,
+            }
+        );
+        
+        if($login->is_error) {
+            print("** Cant connect with proxer: ", $login->status_line, "\n");
+            next;
+        }
+        $login = eval {return JSON::decode_json($login->decoded_content);};
+        if(!$login) {
+            print("** Something went wrong: No valid JSON\n");
+            next;
+        }
+        
+        if($login->{'error'} ne 0) {
+            print('** Auth failed: ', $login->{'message'}, "\n");
+            next;
+        }
+        print("** Login successfull\n");
+        return 1;
+        last;
+    }
+    print
+    return undef;
+}
+
+
 
 
 ##########################################
