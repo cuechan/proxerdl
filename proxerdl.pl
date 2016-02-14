@@ -102,6 +102,7 @@ my $opt_lang;
 my $opt_out;
 my $opt_nodir;
 my $opt_prefix;
+my $opt_note;
 
 my @proxer_watch;
 my $proxer_id;
@@ -155,6 +156,7 @@ GetOptions(
     'list' => \$opt_list,
     'no-dir' => \$opt_nodir,
     'prefix=s' => \$opt_prefix,
+    'note=s' => \$opt_note,
 );
 
 # parsing opts
@@ -366,24 +368,34 @@ else {
     ERROR("Something went wrong");
 }
 
+################
+##### POST #####
+################
+
+if($opt_note) {
+    if(login()) {
+        $ua->get("http://proxer.me/info/$proxer_id?format=json&json=note");
+    } else {
+        print("** Cant add to watchlist\n");
+    }
+}
+
 $dl_sum{'time'}{'end'} = time();
 $dl_sum{'time'}{'all'} = $dl_sum{'time'}{'end'} - $dl_sum{'time'}{'start'};
 
-# print a small summary
 $dl_sum{'data'} /= 10**6;
 
 $dl_sum{'bndwth'} = nearest(0.001, $dl_sum{'data'} / $dl_sum{'time'});
 $dl_sum{'data'} = nearest(0.001, $dl_sum{'data'});
 
 
-
-
+INFO("SUMMARY:");
 INFO("Error:       ", $dl_sum{'err'}) if $dl_sum{'err'};
 INFO("Skipped:     ", $dl_sum{'skipped'}) if $dl_sum{'skipped'};
-INFO("Time:        ", $dl_sum{'time'}{'all'}) if $dl_sum{'time'}{'all'};
+INFO("Time:        ", $dl_sum{'time'}{'all'}, "s") if $dl_sum{'time'}{'all'};
 INFO("Data:        ", $dl_sum{'data'}, "MB") if $dl_sum{'data'};
 INFO("Bandwidth:   ", $dl_sum{'bndwth'}, "MB/s");
-
+INFO("");
 INFO("Download complete");
 
 proxer();
@@ -899,7 +911,7 @@ sub login {
         return 1;
         last;
     }
-    print
+    print("** Authentification failed\n");
     return undef;
 }
 
