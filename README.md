@@ -19,7 +19,8 @@ Perl is needed with following modules:
 - [LWP](http://search.cpan.org/~ether/libwww-perl-6.15/lib/LWP.pm)
 - [JSON](http://search.cpan.org/~makamaka/JSON-2.90/lib/JSON.pm)
 
-Unfortunately we can't download hentai.
+~~Unfortunately we can't download hentai.~~
+For downloading hentai or h-manga you need a proxer account.
 
 It was only tested on Linux. Im not sure if it runs on Windows.
 All in all this software is usable. But its still a bit buggy.
