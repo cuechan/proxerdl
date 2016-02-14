@@ -315,12 +315,13 @@ if(!$opt_nodir) {
     $var =~ s/\//\\/g;
     $var =~ s/^\.//;
     
-    $file_path .= '/'.$var;
+    $file_path .= '/'.$var.'/';
     if(!-d $file_path) {
         VERBOSE("Create directory: $file_path");
         mkdir("$file_path") or ERROR("Cant create folder: $!");
     }
 }
+
 
 if($opt_note) {
     print("** Add Anime to watchlist\n");
@@ -339,7 +340,7 @@ if($opt_note) {
 ###################
 
 # Create a summary file
-open(FH, '>', "$file_path/$var.txt") or ERROR("Cant create file: $!");
+open(FH, '>', "$file_path/$meta{'title'}.txt") or ERROR("Cant create file: $!");
 select(FH);
 print($meta{'time'}, "\n");
 print("Title: $meta{'title'}\n");
@@ -352,6 +353,14 @@ print("\n");
 print("Describtion: \n$meta{'desc'}\n");
 select(STDOUT);
 close(FH) or ERROR("Cant close file: $!");
+
+# Download cover image
+$var = dl($meta{'cover'});
+if($var) {
+    open(FH, '>', $file_path.'cover.jpg') or ERROR("Cant create file: $!");
+    print FH $var;
+    close(FH) or ERROR("Cant create file: $!");
+}
 
 
 ###########################
@@ -379,7 +388,9 @@ $dl_sum{'time'}{'all'} = $dl_sum{'time'}{'end'} - $dl_sum{'time'}{'start'};
 
 $dl_sum{'data'} /= 10**6;
 
-$dl_sum{'bndwth'} = nearest(0.001, $dl_sum{'data'} / $dl_sum{'time'});
+$dl_sum{'bndwth'} = $dl_sum{'data'} / $dl_sum{'time'};
+$dl_sum{'bndwth'} = $dl_sum{'bndwth'};
+
 $dl_sum{'data'} = nearest(0.001, $dl_sum{'data'});
 
 
@@ -491,11 +502,14 @@ sub get_info {
     my $season = $1;
     $season =~ s/<.*?>//ig;
     
+    my $image = "https://cdn.proxer.me/cover/$_[0].jpg";
+    
     my %info = (
         'title' => $title,
         'genre' => [@genre],
         'desc' => $desc,
         'season' => $season,
+        'cover' => $image,
     );
     
     return %info;
@@ -566,7 +580,8 @@ sub dl_anime {
         
         # Generate fancy filenames
         my $file_name = $active->{'no'};
-        foreach(1 .. 3-length($active->{'no'})) {
+        $var = length($meta{'elements'}) - length($active->{'no'});
+        foreach(1 .. $var) {
             $file_name = "0$file_name";
         }
         if($opt_prefix) {
@@ -766,8 +781,6 @@ sub dl_manga {
         
         # Download all pages
         foreach(@dl_pages) {
-            INFO($meta{'title'}, ": $active->{'no'}: $active->{'no'}: $_->[0]                  \r");
-            usleep(250000);
             if(!-e "$file_path/$active->{'no'}_$_->[0]") {
                 $page_buffer = dl("$dl_server/$_->[0]");
                 #$page_buffer = "IMAGE";
@@ -775,7 +788,7 @@ sub dl_manga {
                 print FILE ($page_buffer);
                 close(FILE);
             } else {
-                # 
+                next;
             }
         }
         
