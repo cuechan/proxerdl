@@ -156,7 +156,7 @@ GetOptions(
     'list' => \$opt_list,
     'no-dir' => \$opt_nodir,
     'prefix=s' => \$opt_prefix,
-    'note=s' => \$opt_note,
+    'note' => \$opt_note,
 );
 
 # parsing opts
@@ -258,7 +258,6 @@ while(!$var) {
 }
 
 
-
 # prepare the array
 # perl start array at 0, anime start normally at episode 1.
 # We have to trick around a bit.
@@ -305,21 +304,11 @@ elsif($proxer_json->{'kat'} eq 'manga') {
 $meta{'elements'} = scalar(@proxer_watch) -1;
 INFO("Episodes: ", $meta{'elements'});
 
-###################
-##### OUTPUTS ##### 
-###################
-
-
-
-
-
-
 
 if($opt_list) {
     meta_list(@proxer_watch);
     exit;
 }
-
 
 if(!$opt_nodir) {
     $var = $meta{'title'};
@@ -330,6 +319,18 @@ if(!$opt_nodir) {
     if(!-d $file_path) {
         VERBOSE("Create directory: $file_path");
         mkdir("$file_path") or ERROR("Cant create folder: $!");
+    }
+}
+
+if($opt_note) {
+    print("** Add Anime to watchlist\n");
+    if(login()) {
+        $ua->post("http://proxer.me/info/$proxer_id?format=json&json=note", {
+                'checkPost' => 1,
+            }
+        );
+    } else {
+        print("** Cant add to watchlist\n");
     }
 }
 
@@ -372,13 +373,6 @@ else {
 ##### POST #####
 ################
 
-if($opt_note) {
-    if(login()) {
-        $ua->get("http://proxer.me/info/$proxer_id?format=json&json=note");
-    } else {
-        print("** Cant add to watchlist\n");
-    }
-}
 
 $dl_sum{'time'}{'end'} = time();
 $dl_sum{'time'}{'all'} = $dl_sum{'time'}{'end'} - $dl_sum{'time'}{'start'};
