@@ -930,6 +930,7 @@ Usage: proxerdl --link or --id [options...] destination
     
     --prefix        prefix for filename: '--prefix S01E' -> 'S01E001.mp4'. Use it with --no-dir to add a season to existing.
     
+    --note          Add the Anime to your proxer watchlist.
     --list          List the structure of the anime. No Downloading.
     --no-dir        Do not create a directory for the Anime.
     --proxer        ...
