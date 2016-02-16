@@ -88,7 +88,7 @@ BEGIN {
 
 
 my $LWP_useragent = "Proxerdl/dev_v0.01";
-my @wishhost = ("proxer-stream", "streamcloud", "clipfish-extern");
+my @wishhost = ("proxer-stream", "streamcloud", "streamcloud2", "clipfish-extern");
 my @wishlang_anime = ("gerdub", "gersub", "engsub", "engdub");
 my @wishlang_manga = ("de", "en");
 
@@ -472,6 +472,10 @@ sub dl {
 sub get_info {
     my $x = dl("http://proxer.me/info/$_[0]");
     
+    if($x =~ m/<title>.*?error.*?404.*?<\/title/i) {
+        ERROR("Anime not found");
+    }
+    
     if($x =~ m/logge dich ein/i) {
         print("** Need authentification to access this anime/manga\n");
         login() or ERROR("Authentification failed");
@@ -530,13 +534,13 @@ sub dl_anime {
         
         $active = $_;
         
-        sleep(3);
-        
-        if ($_->{'no'} eq '0') { # recognize the first entry
+        if ($active->{'no'} eq '0') { # recognize the first entry
             next;
         }
         
         # select language
+        
+        print("** Start download: ", $active->{'no'}, "\n");
         foreach(@wishlang_anime) {
             $dl_wishlang = $_;
             foreach(@{$active->{'lang'}}) {
@@ -564,6 +568,7 @@ sub dl_anime {
         if(!$dl_lang or !$dl_host) {
             INFO("No suitable host or language found for $active->{'no'}. Skip");
             $dl_sum{'skipped'}++;
+            sleep(5);
             next;
         }
         
@@ -592,6 +597,7 @@ sub dl_anime {
         # Check if file was already downloaded
         if(-e $file_path.'/'.$file_name) {
             $dl_sum{'skipped'}++;
+            sleep(5);
             next;
         }
         
@@ -601,6 +607,7 @@ sub dl_anime {
         my $link = video_link($dl_link);
         if(!$link) {
             $dl_sum{'err'}++;
+            sleep(5);
             next;
         }
         
@@ -614,6 +621,7 @@ sub dl_anime {
         
         if($buffer->status_line !~ m/200/) {
             $dl_sum{'err'}++;
+            sleep(5);
             next;
         }
 
@@ -974,15 +982,7 @@ sub VERBOSE {
         print color('bold yellow');
         print("[INFO] ");
         print color('reset');
-        @_ = grep(undef, @_);
-        if($_[scalar(@_)-1] !~ m/[\r|\b]$/) {
         print(@_, "\n");
-        }else {
-            print(@_);
-        }
-        #exit;
-    }else {
-        #exit;
     }
 }
 
