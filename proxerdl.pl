@@ -93,7 +93,6 @@ my @wishlang_anime = ("gerdub", "gersub", "engsub", "engdub");
 my @wishlang_manga = ("de", "en");
 
 my $opt_verbose;
-my $opt_link;
 my $opt_id;
 my $opt_path;
 my $opt_list;
@@ -147,7 +146,6 @@ $ua->cookie_jar($ua_cookies);
 
 GetOptions(
     'id=i' => \$opt_id,
-    'link=s' => \$opt_link,
     'verbose' => \$opt_verbose,
     'help' => \&help,
     'proxer' => \&proxer,
@@ -160,20 +158,23 @@ GetOptions(
 );
 
 # parsing opts
-if(!$opt_id and !$opt_link) {
-    ERROR("Require link or id");
+if(!$opt_id) {
+    ERROR("Require link or id. Use --help.");
+} else {
+    if($opt_id =~ m/\D/ig) {
+        if($opt_link !~ m/proxer\.me/) {
+            ERROR("No valid proxer link: $opt_link");
+        } else {
+            $opt_link =~ m/.*?proxer\.me\/.*?\/(\d+).*$/;
+            $proxer_id = $1;
+        }
+    } else {
+        $proxer_id = $opt_id;
+    }
 }
 
-# get options
-if($opt_id) {
-    $proxer_id = $opt_id;
-}else{
-    if($opt_link !~ m/proxer\.me/) {
-        ERROR("No valid proxer link: $opt_link");
-        exit;
-    }
-    $opt_link =~ m/.*?proxer\.me\/.*?\/(\d+).*$/;
-    $proxer_id = $1;
+{
+    
 }
 
 # get directory
