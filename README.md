@@ -36,11 +36,9 @@ It just copies `proxer-dl` to `/usr/bin/` and make it executable.
 
 ###Usage
 
+    Usage: proxerdl --link or --id [options...] destination
 
-    $proxerdl --link or --id [options...] destination
-
-    --id            The id of the anime. e.g. proxer.me/info/<ID>#top.
-    --link          The link to an anime on proxer. this can be the detail page or episodes overview.
+    --id            The id of the anime or link.
     --lang          Language preferences as comma separated list: gersub,engdub,....
     --hoster        Hoster preferences as comma separated list: proxerhd,clipfish,streamcloud.
     
@@ -51,7 +49,5 @@ It just copies `proxer-dl` to `/usr/bin/` and make it executable.
     --no-dir        Do not create a directory for the Anime.
     --proxer        ...
     destination     Specify the destination for the download. By default its your current directory/<anime>/.
-`
-    
 
 Take a look at [the LICENSE file](https://github.com/cuechan/proxerdl/blob/master/LICENSE) to see the license.
