@@ -145,7 +145,7 @@ $ua->cookie_jar($ua_cookies);
 ##########################
 
 GetOptions(
-    'id=i' => \$opt_id,
+    'id=s' => \$opt_id,
     'verbose' => \$opt_verbose,
     'help' => \&help,
     'proxer' => \&proxer,
@@ -162,10 +162,10 @@ if(!$opt_id) {
     ERROR("Require link or id. Use --help.");
 } else {
     if($opt_id =~ m/\D/ig) {
-        if($opt_link !~ m/proxer\.me/) {
-            ERROR("No valid proxer link: $opt_link");
+        if($opt_id !~ m/proxer\.me/) {
+            ERROR("No valid proxer link: $opt_id");
         } else {
-            $opt_link =~ m/.*?proxer\.me\/.*?\/(\d+).*$/;
+            $opt_id =~ m/.*?proxer\.me\/.*?\/(\d+).*$/;
             $proxer_id = $1;
         }
     } else {
@@ -173,9 +173,6 @@ if(!$opt_id) {
     }
 }
 
-{
-    
-}
 
 # get directory
 if($ARGV[0]) {
@@ -945,8 +942,7 @@ Downloads all episodes of a given anime.
 
 Usage: proxerdl --link or --id [options...] destination
 
-    --id            The id of the anime. e.g. proxer.me/info/<ID>#top.
-    --link          The link to an anime on proxer. this can be the detail page or episodes overview.
+    --id            The id of the anime or link.
     --lang          Language preferences as comma separated list: gersub,engdub,....
     --hoster        Hoster preferences as comma separated list: proxerhd,clipfish,streamcloud.
     
