@@ -57,6 +57,7 @@ if(@chk_mod) {
     }
     ERROR('Some necessary modules are missing. Run \'cpan install <MODULE>\'');
 }
+undef(@chk_mod);
 
 Math::Round->import('nearest');
 LWP->import;
