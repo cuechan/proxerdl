@@ -84,13 +84,16 @@ $|++; # turn that f*cking buffer off!
 # todo is there an other solution that will work on windows
 BEGIN {
     # make sure ctrl + c on passwd prompt doesnt 'mute' STDOUT
-    
     $SIG{INT} = sub {
         print("\n** Script stopped.\n");
         exit(0);
-        
     }
 }
+
+
+open(STDERR, '>>', 'proxerdl.log');
+
+
 
 #############################
 #####     VARIABLES     #####
@@ -99,7 +102,7 @@ BEGIN {
 
 
 my $LWP_useragent = "Proxerdl/dev_v0.01";
-my @wishhost = ("proxer-stream", "streamcloud", "streamcloud2", "clipfish-extern");
+my @wishhost = ("proxer-stream", "clipfish-extern", "streamcloud2", "streamcloud2");
 my @wishlang_anime = ("gerdub", "gersub", "engsub", "engdub");
 my @wishlang_manga = ("de", "en");
 
@@ -167,10 +170,12 @@ GetOptions(
     'no-dir' => \$opt_nodir,
     'prefix=s' => \$opt_prefix,
     'note' => \$opt_note,
-    'extdl' => \$opt_extdl,
+    'extdl=s' => \$opt_extdl,
 );
 
-# parsing opts
+
+##### CHECK OPTs #####
+
 if(!$opt_id) {
     ERROR("Require link or id. Use --help.");
 } else {
@@ -199,6 +204,10 @@ if($ARGV[0]) {
 } else {
     $file_path = getcwd();
     VERBOSE("No path given. Set to current location: $file_path");
+}
+
+if($opt_extdl and !$opt_hoster) {
+    ERROR('Option --extdl requires --hoster LIST. Try --help.');
 }
 
 if($opt_lang) {
@@ -415,6 +424,7 @@ INFO("");
 INFO("Download complete");
 
 proxer();
+
 
 exit(0);
 
