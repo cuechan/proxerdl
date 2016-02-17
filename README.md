@@ -26,7 +26,7 @@ Perl is needed with following modules:
 For downloading hentai or h-manga you need a proxer account.
 
 It was tested on Linux.
-It also run on windows with [strawberry perl](http://strawberryperl.com/).
+It also runs on windows with [strawberry perl](http://strawberryperl.com/).
 Please note theres no colorfull output on the windows commandline. Instead you will see some strange numbers and letters...
 Dont get distracted by that...
 
