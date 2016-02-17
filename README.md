@@ -10,7 +10,7 @@ Youtube-dl is not necessary anymore.
 
 Mangas can be downloaded without additional software.
 
-###Requrements and limitations
+###Requirements and limitations
 
 At the moment we only can download anime from proxerHD, clipfish and streamcloud for sure.
 Maybe i'am going to add some other hosters. Not sure yet.
