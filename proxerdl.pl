@@ -32,20 +32,30 @@ use Cwd;
 use Data::Dumper;
 use Time::HiRes qw(usleep);
 
+
+my @chk_mod;
+
 if(!eval {require LWP}) {
-    ERROR("LWP is not installed. Run \'cpan install LWP\' to install.");
+    push(@chk_mod, 'LWP');
 }
 if(!eval {require JSON}) {
-    ERROR("JSON is not installed. Run \'cpan install JSON\' to install.");
+    push(@chk_mod, 'JSON');
 }
 if(!eval {require HTTP::Cookies}) {
-    ERROR("HTTP::Cookies is not installed. Run \'cpan install HTTP::Cookies\' to install.");
+    push(@chk_mod, 'HTTP::Cookies');
 }
 if(!eval {require Term::ReadKey}) {
-    ERROR("Term::ReadKey is not installed. Run \'cpan install Term::ReadKey\' to install.");
+    push(@chk_mod, 'Term::ReadKey');
 }
 if(!eval {require Math::Round}) {
-    ERROR("Math::Round is not installed. Run \'cpan install Math::Round\' to install.");
+    push(@chk_mod, 'Math::Round');
+}
+
+if(@chk_mod) {
+    foreach(@chk_mod) {
+        print('Missing Module: ', $_, "\n");
+    }
+    ERROR('Some necessary modules are missing. Run \'cpan install <MODULE>\'');
 }
 
 Math::Round->import('nearest');
@@ -102,6 +112,7 @@ my $opt_out;
 my $opt_nodir;
 my $opt_prefix;
 my $opt_note;
+my $opt_extdl;
 
 my @proxer_watch;
 my $proxer_id;
@@ -155,6 +166,7 @@ GetOptions(
     'no-dir' => \$opt_nodir,
     'prefix=s' => \$opt_prefix,
     'note' => \$opt_note,
+    'extdl' => \$opt_extdl,
 );
 
 # parsing opts
@@ -579,7 +591,6 @@ sub dl_anime {
         }
         
         
-        ##### DOWNLOAD #####
         
         # Generate fancy filenames
         my $file_name = $active->{'no'};
@@ -600,7 +611,7 @@ sub dl_anime {
         }
         
         
-        
+        ##### DOWNLOAD #####
         
         my $link = video_link($dl_link);
         if(!$link) {
