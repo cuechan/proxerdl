@@ -31,12 +31,19 @@ use Getopt::Long;
 use Cwd;
 use Data::Dumper;
 use Time::HiRes qw(usleep);
+use File::Fetch;
 
 
 my @chk_mod;
 
 if(!eval {require LWP}) {
     push(@chk_mod, 'LWP');
+}
+if(!eval {require LWP::ConnCache}) {
+    push(@chk_mod, 'LWP::ConnCache');
+}
+if(!eval {require LWP::ConnCache::MaxKeepAliveRequests}) {
+    push(@chk_mod, 'LWP::ConnCache::MaxKeepAliveRequests');
 }
 if(!eval {require JSON}) {
     push(@chk_mod, 'JSON');
@@ -99,10 +106,12 @@ BEGIN {
 
 
 
-my $LWP_useragent = "Proxerdl/dev_v0.01";
+my $LWP_useragent = "Proxerdl/dev_v0.5";
 my @wishhost = ("proxer-stream", "streamcloud", "streamcloud2", "clipfish-extern");
 my @wishlang_anime = ("gerdub", "gersub", "engsub", "engdub");
 my @wishlang_manga = ("de", "en");
+
+my $timeout = 7;
 
 my $opt_verbose;
 my $opt_id;
@@ -140,15 +149,26 @@ my $file_count = 0;
 my @files;
 my @episodes;
 
+$File::Fetch::USER_AGENT = $LWP_useragent;
+$File::Fetch::TIMEOUT = 5;
+
 # cookies...
 my $ua_cookies = HTTP::Cookies->new(
     #file => './cookies',
     autosave => 1,
 );
-my $ua = LWP::UserAgent->new;
+
+my $ua = LWP::UserAgent->new();
+
+$ua->conn_cache(LWP::ConnCache::MaxKeepAliveRequests->new(
+          total_capacity          => 5000,
+          max_keep_alive_requests => 5000,
+      )     
+);
 $ua->agent($LWP_useragent);
 $ua->timeout(5);
 $ua->cookie_jar($ua_cookies);
+
 
 
 ##########################
@@ -228,6 +248,7 @@ if($opt_hoster) {
 # Get all info we need
 %meta = get_info($proxer_id);
 $meta{'tstart'} = time();
+
 
 INFO("Title: ", $meta{'title'});
 undef($var);
@@ -548,7 +569,7 @@ sub dl_anime {
         
         # select language
         
-        print("** Start download: ", $active->{'no'}, "\n");
+        INFO("Start download: ", $active->{'no'});
         foreach(@wishlang_anime) {
             $dl_wishlang = $_;
             foreach(@{$active->{'lang'}}) {
@@ -576,7 +597,7 @@ sub dl_anime {
         if(!$dl_lang or !$dl_host) {
             INFO("No suitable host or language found for $active->{'no'}. Skip");
             $meta{'skipped'}++;
-            sleep(5);
+            sleep($timeout);
             next;
         }
         
@@ -604,7 +625,7 @@ sub dl_anime {
         # Check if file was already downloaded
         if(-e $file_path.'/'.$file_name) {
             $meta{'skipped'}++;
-            sleep(5);
+            sleep($timeout);
             next;
         }
         
@@ -614,28 +635,54 @@ sub dl_anime {
         my $link = video_link($dl_link);
         if(!$link) {
             $meta{'err'}++;
-            sleep(5);
+            sleep($timeout);
             next;
         }
         
         
-        $ua->show_progress(1);
-        my $buffer = $ua->get($link);
-        $ua->show_progress(undef);
+        my $ff = File::Fetch->new(uri => $link);
+        INFO("*** Downloading...");
+        my $buffer;
+        my $var = eval {
+            $ff->fetch(to => \$buffer);
+        };
         
-        
-        $meta{'data'} += length($buffer->decoded_content);
-        
-        if($buffer->status_line !~ m/200/) {
+        if(!$var) {
+            print("**! Error while downloading. Skip");
+            VERBOSE($ff->error);
             $meta{'err'}++;
-            sleep(5);
+            sleep($timeout);
             next;
         }
-
-
+        
+        
+        #$ua->show_progress(1);
+        #my $req = HTTP::Request->new(HEAD => $link);
+        #$req->accept_decodable;
+        
+        #my $buffer = $ua->request($req);
+        #$ua->show_progress(undef);
+        
+        #print Dumper($buffer->headers);
+        
+        
+        
+        #$ua->show_progress(1);
+        #my $buffer = $ua->get($link);
+        #$ua->show_progress(undef);
+        
+        
+        
+        #$meta{'data'} += length($buffer->decoded_content);
+        
+        #if($buffer->status_line !~ m/200/) {
+            #$meta{'err'}++;
+            #sleep(5);
+            #next;
+        #}
         
         open(FH, '>:raw', $file_path.'/'.$file_name) or ERROR("Cant write file: $!");
-        print FH $buffer->decoded_content;
+        print FH $buffer;
         close(FH);
         
         VERBOSE("waiting...");
@@ -972,9 +1019,7 @@ exit;
 }
 
 sub INFO {
-    print color('bold green');
-    print("[INFO] ");
-    print color('reset');
+    print("*** ");
     @_ = grep(!undef, @_);
     if($_[scalar(@_)-1] !~ m/[\r|\b]$/) {
         print(@_, "\n");
@@ -985,17 +1030,13 @@ sub INFO {
 
 sub VERBOSE {
     if($opt_verbose) {
-        print color('bold yellow');
-        print("[INFO] ");
-        print color('reset');
+        print("### ");
         print(@_, "\n");
     }
 }
 
 sub ERROR {
-    print color('bold red');
-    print("[ERROR] ");
-    print color('reset');
+    print("!!! ");
     print("@_\n");
     exit(1);
 }
