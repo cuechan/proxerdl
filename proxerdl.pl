@@ -62,7 +62,7 @@ if(@chk_mod) {
     foreach(@chk_mod) {
         print('Missing Module: ', $_, "\n");
     }
-    ERROR('Some necessary modules are missing. Run \'cpan install <MODULE>\'');
+    ERROR('Some necessary modules are missing. Run \'cpan install <MODULE NAME>\'');
 }
 undef(@chk_mod);
 
@@ -150,7 +150,7 @@ my @files;
 my @episodes;
 
 $File::Fetch::USER_AGENT = $LWP_useragent;
-$File::Fetch::TIMEOUT = 5;
+$File::Fetch::TIMEOUT = $timeout;
 
 # cookies...
 my $ua_cookies = HTTP::Cookies->new(
@@ -166,7 +166,7 @@ $ua->conn_cache(LWP::ConnCache::MaxKeepAliveRequests->new(
       )     
 );
 $ua->agent($LWP_useragent);
-$ua->timeout(5);
+$ua->timeout($timeout);
 $ua->cookie_jar($ua_cookies);
 
 
@@ -187,6 +187,7 @@ GetOptions(
     'prefix=s' => \$opt_prefix,
     'note' => \$opt_note,
     'extdl=s' => \$opt_extdl,
+    'timeout=i' => \$timeout
 );
 
 
@@ -313,7 +314,7 @@ $proxer_watch[0] = {
 
 
 
-# prepare your... array
+# prepare the array
 
 # merge the different language entris together
 if($proxer_json->{'kat'} eq 'anime') {    
@@ -358,7 +359,7 @@ if(!$opt_nodir) {
 
 
 if($opt_note) {
-    print("** Add Anime to watchlist\n");
+    print("*** Add Anime to watchlist\n");
     if(login()) {
         $ua->post("http://proxer.me/info/$proxer_id?format=json&json=note", {
                 'checkPost' => 1,
@@ -490,7 +491,7 @@ sub dl {
         } else { 
             print("** Download error. Waiting 10s\n");
             VERBOSE("** Download wasnt successfull. Check your internet connection. Try again in 10s");
-            sleep(10);
+            sleep($timeout);
             next;
         }
     }
@@ -551,6 +552,9 @@ sub get_info {
 
 sub dl_anime {
     my $skipped = 0;
+    
+    
+    
     foreach(@_) {
         my $dl_lang;
         my $dl_host;
@@ -601,6 +605,10 @@ sub dl_anime {
             next;
         }
         
+        
+        
+        
+        
         $dl_link = $dl_host->{'replace'};
         # Some hotfix stuff:
         if($dl_link !~ m/#/) {
@@ -624,6 +632,7 @@ sub dl_anime {
         
         # Check if file was already downloaded
         if(-e $file_path.'/'.$file_name) {
+            INFO("Already downloaded");
             $meta{'skipped'}++;
             sleep($timeout);
             next;
@@ -641,45 +650,20 @@ sub dl_anime {
         
         
         my $ff = File::Fetch->new(uri => $link);
-        INFO("*** Downloading...");
+        INFO("Downloading...");
         my $buffer;
         my $var = eval {
             $ff->fetch(to => \$buffer);
         };
         
         if(!$var) {
-            print("**! Error while downloading. Skip");
+            print("**! Error while downloading. Skip\n");
             VERBOSE($ff->error);
             $meta{'err'}++;
             sleep($timeout);
             next;
         }
         
-        
-        #$ua->show_progress(1);
-        #my $req = HTTP::Request->new(HEAD => $link);
-        #$req->accept_decodable;
-        
-        #my $buffer = $ua->request($req);
-        #$ua->show_progress(undef);
-        
-        #print Dumper($buffer->headers);
-        
-        
-        
-        #$ua->show_progress(1);
-        #my $buffer = $ua->get($link);
-        #$ua->show_progress(undef);
-        
-        
-        
-        #$meta{'data'} += length($buffer->decoded_content);
-        
-        #if($buffer->status_line !~ m/200/) {
-            #$meta{'err'}++;
-            #sleep(5);
-            #next;
-        #}
         
         open(FH, '>:raw', $file_path.'/'.$file_name) or ERROR("Cant write file: $!");
         print FH $buffer;
@@ -830,7 +814,7 @@ sub dl_manga {
         
         if(!$dl_lang) {
             INFO("No suitable language found for $active->{'no'}. Skip");
-            sleep(3);
+            sleep($timeout);
             next;
         }
         VERBOSE("Selected $dl_lang for $active->{'no'}.");
@@ -855,7 +839,7 @@ sub dl_manga {
         }
         
         # chillout for the ddos protection;
-        sleep(3);
+        sleep($timeout);
     }
 }
 
@@ -973,14 +957,14 @@ sub login {
         }
         
         if($login->{'error'} ne 0) {
-            print('** Auth failed: ', $login->{'message'}, "\n");
+            print('*** Auth failed: ', $login->{'message'}, "\n");
             next;
         }
-        print("** Login successfull\n");
+        print("*** Login successfull\n");
         return 1;
         last;
     }
-    print("** Authentification failed\n");
+    print("*** Authentification failed\n");
     return undef;
 }
 
@@ -1001,6 +985,9 @@ Usage: proxerdl --link or --id [options...] destination
     --id            The id of the anime or link.
     --lang          Language preferences as comma separated list: gersub,engdub,....
     --hoster        Hoster preferences as comma separated list: proxerhd,clipfish,streamcloud.
+    --timeout        Set the global timeout in seconds. Default 10. 
+    
+    --extdl         Use an externaal downloader. Replacements: '%title', '%link'.
     
     --prefix        prefix for filename: '--prefix S01E' -> 'S01E001.mp4'. Use it with --no-dir to add a season to existing.
     
@@ -1058,6 +1045,7 @@ sub proxer {
         '|_|   |_| \_\\\___/_/\_\_____|_| \_(_)_|  |_|_____|',
     );
     
+    print 'Feel free to make a donation to proxer!';
     foreach(@proxer) {
         print(color($colors[(rand(6))]));
         print($_, "\n");
