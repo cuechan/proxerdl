@@ -161,9 +161,9 @@ my $ua_cookies = HTTP::Cookies->new(
 my $ua = LWP::UserAgent->new();
 
 $ua->conn_cache(LWP::ConnCache::MaxKeepAliveRequests->new(
-          total_capacity          => 5000,
-          max_keep_alive_requests => 5000,
-      )     
+        total_capacity          => 5000,
+        max_keep_alive_requests => 5000,
+    )
 );
 $ua->agent($LWP_useragent);
 $ua->timeout($timeout);
