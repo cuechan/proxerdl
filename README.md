@@ -1,20 +1,27 @@
-#proxerdl
-Small tool for downloading an anime and manga from [proxer.me](http://proxer.me).
+proxerdl
+========
+Small tool for downloading manga from [proxer.me](http://proxer.me).
 
-###Anime:
+Anime
+======
+Anime support was removed.
 
-~~For Anime you need [youtube-dl](https://rg3.github.io/youtube-dl/) installed on your system.~~
-Youtube-dl is not necessary anymore. 
+Proxer's server are allways running at their limits. To support proxer and spare proxer's bandwidth i removed the support for anime.
 
-###Manga
+Manga
+=====
+All manga can be downloaded unless the fsk18 stuff... (this is going to be fixed soon).
 
-Mangas can be downloaded without additional software.
+Future goals
+============
+- zip manga to handy package
+- converting to epub
+- running proxerdl as online service
+- secure windows compability
+- rewrite in C
 
-###Requirements and limitations
-
-At the moment we only can download anime from proxerHD, clipfish and streamcloud for sure.
-Maybe i'am going to add some other hosters. Not sure yet.
-
+Requirements and limitations
+============================
 Perl is needed with following modules:
 - [LWP](http://search.cpan.org/~ether/libwww-perl-6.15/lib/LWP.pm)
 - [JSON](http://search.cpan.org/~makamaka/JSON-2.90/lib/JSON.pm)
@@ -22,8 +29,9 @@ Perl is needed with following modules:
 - [HTTP::Cookies](http://search.cpan.org/~gaas/HTTP-Cookies-6.01/lib/HTTP/Cookies.pm)
 - [Term::ReadKey](http://search.cpan.org/~jstowe/TermReadKey-2.33/ReadKey.pm)
 
-~~Unfortunately we can't download hentai.~~
-For downloading hentai or h-manga you need a proxer account.
+(Some of them are core-modules)
+
+You can use `cpan install <modulename>` to install a module. 
 
 It was tested on Linux.
 It also runs on windows with [strawberry perl](http://strawberryperl.com/).
@@ -37,6 +45,8 @@ You can simply run the installation script
 It just copies `proxer-dl` to `/usr/bin/` and make it executable.
 
 ###Usage
+This is obsolete. Will be updated soon
+===
 
     Usage: proxerdl --link or --id [options...] destination
 
